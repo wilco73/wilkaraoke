@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎤 N'oubliez pas les Paroles</title>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-dark: #0a0a1a;
+    --bg-card: #12122a;
+    --accent: #f7b731;
+    --accent-glow: #f7b73166;
+    --pink: #e84393;
+    --pink-glow: #e8439366;
+    --blue: #00cec9;
+    --blue-glow: #00cec966;
+    --text: #f0f0f0;
+    --text-dim: #8888aa;
+    --success: #00b894;
+    --danger: #d63031;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-dark);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: 
+      radial-gradient(ellipse at 20% 50%, #1a0a3a 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, #0a1a3a 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, #1a0a2a 0%, transparent 50%);
+    z-index: -1;
+  }
+
+  .app {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* ---- Header ---- */
+  .header {
+    text-align: center;
+    padding: 24px 0 16px;
+  }
+
+  .header h1 {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 2rem;
+    background: linear-gradient(135deg, var(--accent), var(--pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 20px var(--accent-glow));
+  }
+
+  .header p {
+    color: var(--text-dim);
+    margin-top: 4px;
+    font-size: 0.9rem;
+  }
+
+  /* ---- Video Stage ---- */
+  .video-stage {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    aspect-ratio: 16 / 9;
+    margin: 20px 0 8px;
+    border: 2px solid #222244;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5), 0 0 60px var(--accent-glow);
+  }
+
+  .video-stage video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .video-stage .placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #0a0a2a, #1a0a3a);
+  }
+
+  .placeholder .icon { font-size: 4rem; opacity: 0.3; }
+  .placeholder .msg { color: var(--text-dim); font-size: 0.95rem; }
+
+  /* Subtitle overlay */
+  .subtitle-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 20px 30px 24px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.88));
+    text-align: center;
+    min-height: 80px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .subtitle-text {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.6;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  }
+
+  .subtitle-text .word {
+    display: inline-block;
+    margin: 0 3px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all 0.25s;
+  }
+
+  .word.highlighted { color: var(--accent); transform: scale(1.08); }
+
+  .word.hidden-word {
+    background: rgba(255,255,255,0.13);
+    color: transparent;
+    border-radius: 6px;
+    min-width: 50px;
+    position: relative;
+  }
+  .word.hidden-word::after {
+    content: '____';
+    color: var(--text-dim);
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+  }
+
+  .word.revealed {
+    background: rgba(0, 184, 148, 0.3);
+    color: var(--success);
+    animation: revealPop 0.4s ease;
+  }
+
+  @keyframes revealPop {
+    0% { transform: scale(1.4); }
+    50% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+  }
+
+  /* Status badges */
+  .status-bar {
+    position: absolute;
+    top: 14px; right: 14px;
+    display: flex; gap: 8px;
+  }
+
+  .status-pill {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    backdrop-filter: blur(10px);
+  }
+
+  .status-pill.playing { background: rgba(247,183,49,0.25); color: var(--accent); border: 1px solid var(--accent); }
+  .status-pill.muted { background: rgba(214,48,49,0.25); color: var(--danger); border: 1px solid var(--danger); animation: pulse 1s infinite; }
+  .status-pill.paused { background: rgba(136,136,170,0.25); color: var(--text-dim); border: 1px solid #555; }
+
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+  /* Score */
+  .score-display {
+    position: absolute;
+    top: 14px; left: 14px;
+    backdrop-filter: blur(10px);
+    background: rgba(0,0,0,0.5);
+    padding: 6px 14px;
+    border-radius: 12px;
+    border: 1px solid #333;
+  }
+  .score-display .label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); }
+  .score-display .value { font-family: 'Dela Gothic One', cursive; font-size: 1.4rem; color: var(--accent); }
+
+  /* ---- Progress ---- */
+  .progress-container {
+    background: #1a1a3a;
+    border-radius: 8px;
+    height: 6px;
+    margin: 8px 0;
+    overflow: visible;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--pink));
+    border-radius: 8px;
+    transition: width 0.15s linear;
+  }
+
+  .cutoff-marker {
+    position: absolute;
+    top: -5px;
+    width: 3px;
+    height: 16px;
+    background: var(--danger);
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--danger);
+    z-index: 2;
+  }
+
+  .time-display {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Controls ---- */
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 12px 0;
+  }
+
+  .btn {
+    padding: 11px 24px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  .btn-primary { background: linear-gradient(135deg, var(--accent), #e0a020); color: #1a1a1a; box-shadow: 0 4px 12px var(--accent-glow); }
+  .btn-secondary { background: var(--bg-card); color: var(--text); border: 1px solid #333; }
+  .btn-danger { background: linear-gradient(135deg, var(--pink), #c0392b); color: white; box-shadow: 0 4px 12px var(--pink-glow); }
+  .btn-success { background: linear-gradient(135deg, var(--blue), var(--success)); color: #1a1a1a; box-shadow: 0 4px 12px var(--blue-glow); }
+
+  /* ---- Guess Area ---- */
+  .guess-area {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 18px;
+    margin: 14px 0;
+    border: 1px solid #222244;
+    display: none;
+  }
+  .guess-area.active { display: block; animation: slideUp 0.3s ease; }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .guess-area h3 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .guess-input-row { display: flex; gap: 10px; }
+
+  .guess-input {
+    flex: 1;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 2px solid #333;
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .guess-input:focus { border-color: var(--accent); }
+  .guess-input::placeholder { color: var(--text-dim); }
+
+  .guess-feedback {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    min-height: 1.2em;
+  }
+
+  /* ---- Song Library ---- */
+  .library {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid #222244;
+  }
+
+  .library-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .library-header h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+  }
+
+  .library-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-sm {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-sm:hover { transform: translateY(-1px); }
+
+  .btn-sm.random { background: linear-gradient(135deg, var(--pink), #a020f0); color: white; }
+  .btn-sm.refresh { background: rgba(255,255,255,0.08); color: var(--text-dim); border: 1px solid #333; }
+
+  .song-count {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  /* Search */
+  .search-box {
+    width: 100%;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: #555; }
+
+  /* Song list */
+  .song-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .song-list::-webkit-scrollbar { width: 6px; }
+  .song-list::-webkit-scrollbar-track { background: transparent; }
+  .song-list::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+  .song-item {
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .song-item:hover { background: rgba(247,183,49,0.06); border-color: var(--accent); }
+  .song-item.active { background: rgba(247,183,49,0.1); border-color: var(--accent); box-shadow: 0 0 16px var(--accent-glow); }
+
+  .song-info .title { font-weight: 700; font-size: 0.95rem; }
+  .song-info .artist { color: var(--text-dim); font-size: 0.82rem; margin-top: 1px; }
+  .song-info .meta { color: #555; font-size: 0.72rem; margin-top: 3px; }
+
+  .song-right { display: flex; align-items: center; gap: 10px; }
+
+  .difficulty {
+    font-size: 0.68rem;
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .difficulty.easy { background: rgba(0,184,148,0.15); color: var(--success); }
+  .difficulty.medium { background: rgba(247,183,49,0.15); color: var(--accent); }
+  .difficulty.hard { background: rgba(214,48,49,0.15); color: var(--danger); }
+
+  .no-video-badge {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(136,136,170,0.15);
+    color: var(--text-dim);
+  }
+
+  /* ---- Empty state ---- */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.5; }
+  .empty-state h3 { color: var(--text); margin-bottom: 8px; }
+  .empty-state p { font-size: 0.88rem; line-height: 1.6; max-width: 500px; margin: 0 auto; }
+  .empty-state code {
+    display: block;
+    background: rgba(255,255,255,0.05);
+    padding: 14px;
+    border-radius: 10px;
+    margin: 14px auto;
+    text-align: left;
+    max-width: 420px;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--accent);
+  }
+
+  /* ---- Info Panel ---- */
+  .info-panel {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid #222244;
+  }
+  .info-panel h3 {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 0.95rem;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .info-panel p {
+    color: var(--text-dim);
+    font-size: 0.88rem;
+    line-height: 1.6;
+    margin-bottom: 6px;
+  }
+  .info-panel kbd {
+    background: rgba(255,255,255,0.08);
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 0.78rem;
+    border: 1px solid #444;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  /* ---- Loading overlay ---- */
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,10,26,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    flex-direction: column;
+    gap: 16px;
+    transition: opacity 0.3s;
+  }
+  .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 4px solid #333;
+    border-top: 4px solid var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 600px) {
+    .header h1 { font-size: 1.3rem; }
+    .subtitle-text { font-size: 1.1rem; }
+    .controls { gap: 6px; }
+    .btn { padding: 9px 16px; font-size: 0.82rem; }
+  }
+
+  /* ---- Volume Control ---- */
+  .volume-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 10px 16px;
+    border: 1px solid #222244;
+    margin: 10px 0;
+  }
+
+  .volume-control .vol-icon {
+    font-size: 1.1rem;
+    cursor: pointer;
+    user-select: none;
+    min-width: 28px;
+    text-align: center;
+  }
+
+  .volume-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: #2a2a4a;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px var(--accent-glow);
+    transition: transform 0.15s;
+  }
+
+  .volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+
+  .volume-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  .volume-pct {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    min-width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Cutoff window markers on progress bar ---- */
+  .cutoff-window-marker {
+    position: absolute;
+    top: -2px;
+    height: 10px;
+    background: rgba(214, 48, 49, 0.35);
+    border-left: 2px solid var(--danger);
+    border-right: 2px solid var(--danger);
+    border-radius: 3px;
+    z-index: 2;
+    box-shadow: 0 0 6px rgba(214, 48, 49, 0.3);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div style="color: var(--text-dim); font-size: 0.9rem;">Chargement de la bibliothèque...</div>
+</div>
+
+<div class="app">
+  <div class="header">
+    <h1>🎤 N'oubliez pas les Paroles</h1>
+    <p>Karaoké interactif avec coupure de son</p>
+  </div>
+
+  <!-- Video Stage -->
+  <div class="video-stage" id="videoStage">
+    <video id="videoPlayer" playsinline crossorigin="anonymous"></video>
+
+    <div class="placeholder" id="placeholder">
+      <div class="icon">🎬</div>
+      <div class="msg">Sélectionnez une chanson pour commencer</div>
+    </div>
+
+    <div class="score-display" style="display:none" id="scoreBox">
+      <div class="label">Score</div>
+      <div class="value" id="scoreValue">0</div>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-pill paused" id="statusPill">⏸ En attente</div>
+    </div>
+
+    <div class="subtitle-overlay">
+      <div class="subtitle-text" id="subtitleText"></div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-container" id="progressContainer">
+    <div id="cutoffMarkers"></div>
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+  <div class="time-display">
+    <span><span id="currentTime">0:00</span> / <span id="totalTime">0:00</span></span>
+    <span id="cutoffInfo" style="color: var(--danger);"></span>
+  </div>
+
+  <!-- Volume -->
+  <div class="volume-control">
+    <span class="vol-icon" id="volIcon" onclick="toggleMuteManual()">🔊</span>
+    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80" oninput="setVolume(this.value)">
+    <span class="volume-pct" id="volumePct">80%</span>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn btn-primary" id="btnPlay" onclick="togglePlay()" disabled>▶ Jouer</button>
+    <button class="btn btn-danger" id="btnCutoff" onclick="triggerCutoff()" disabled>✂ Couper le son</button>
+    <button class="btn btn-success" id="btnReveal" onclick="revealNext()" disabled>👁 Révéler</button>
+    <button class="btn btn-secondary" onclick="resetGame()">↺ Reset</button>
+  </div>
+
+  <!-- Guess Area -->
+  <div class="guess-area" id="guessArea">
+    <h3>🎤 Devinez les paroles</h3>
+    <div class="guess-input-row">
+      <input type="text" class="guess-input" id="guessInput"
+             placeholder="Tapez un mot des paroles..."
+             onkeydown="if(event.key==='Enter') checkGuess()" autocomplete="off">
+      <button class="btn btn-primary" onclick="checkGuess()">OK</button>
+    </div>
+    <div class="guess-feedback" id="guessFeedback"></div>
+  </div>
+
+  <!-- Library -->
+  <div class="library">
+    <div class="library-header">
+      <h3>📚 Bibliothèque</h3>
+      <div class="library-actions">
+        <button class="btn-sm random" onclick="pickRandom()">🎲 Au hasard</button>
+        <button class="btn-sm refresh" onclick="refreshLibrary()">↻ Rafraîchir</button>
+      </div>
+    </div>
+    <div class="song-count" id="songCount"></div>
+    <input type="text" class="search-box" id="searchBox" placeholder="🔍 Rechercher une chanson ou un artiste..." oninput="filterSongs()">
+    <div class="song-list" id="songList"></div>
+  </div>
+
+  <!-- Info -->
+  <div class="info-panel">
+    <h3>Guide rapide</h3>
+    <p>
+      Placez vos chansons dans le dossier <kbd>videos/</kbd> à côté de <kbd>server.py</kbd>.
+      Chaque chanson doit avoir son propre sous-dossier avec au minimum un fichier <kbd>.srt</kbd>
+      (sous-titres). Ajoutez un <kbd>config.json</kbd> pour personnaliser le titre, artiste, difficulté et point de coupure.
+    </p>
+    <p>
+      Pour générer les sous-titres automatiquement avec Whisper :<br>
+      <kbd>whisper video.mp4 --language fr --output_format srt</kbd>
+    </p>
+    <p>
+      Le bouton <kbd>🎲 Au hasard</kbd> choisit une chanson aléatoire. 
+      Le son se coupe automatiquement au point défini dans <kbd>config.json</kbd>
+      (ou à 50% par défaut). Vous pouvez aussi couper manuellement avec <kbd>✂ Couper</kbd>.
+    </p>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const API = '';
+let songs = [];
+let currentSong = null;
+let isMuted = false;       // game mute (cutoff active)
+let score = 0;
+let revealedWords = new Set();
+let hiddenWordIndices = [];
+let subtitleInterval = null;
+let currentWindowIdx = -1; // which cutoff window we're in (-1 = none)
+let savedVolume = 0.8;     // remember volume before game mute
+
+const video = document.getElementById('videoPlayer');
+video.volume = 0.8;
+
+// ============================================================
+// API CALLS
+// ============================================================
+async function fetchSongs() {
+  try {
+    const res = await fetch(`${API}/api/songs`);
+    const data = await res.json();
+    return data.songs || [];
+  } catch (e) {
+    console.error('Erreur de connexion au serveur:', e);
+    return [];
+  }
+}
+
+async function fetchSongDetail(id) {
+  const res = await fetch(`${API}/api/songs/${id}`);
+  return res.json();
+}
+
+async function fetchRandomSong() {
+  const res = await fetch(`${API}/api/random`);
+  return res.json();
+}
+
+async function refreshLibrary() {
+  showLoading(true);
+  try {
+    const res = await fetch(`${API}/api/refresh`);
+    const data = await res.json();
+    songs = data.songs || [];
+    renderSongList(songs);
+  } catch (e) {
+    console.error('Erreur refresh:', e);
+  }
+  showLoading(false);
+}
+
+// ============================================================
+// UI RENDERING
+// ============================================================
+function renderSongList(list) {
+  const container = document.getElementById('songList');
+  document.getElementById('songCount').textContent = `${list.length} chanson${list.length > 1 ? 's' : ''} disponible${list.length > 1 ? 's' : ''}`;
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📁</div>
+        <h3>Aucune chanson trouvée</h3>
+        <p>Ajoutez des chansons dans le dossier <strong>videos/</strong> avec cette structure :</p>
+        <code>
+          videos/<br>
+          &nbsp;&nbsp;ma-chanson/<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;video.mp4<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;subtitles.srt<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;config.json <span style="color:var(--text-dim)">(optionnel)</span>
+        </code>
+        <p>Puis cliquez sur <strong>↻ Rafraîchir</strong></p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = list.map(song => {
+    const diffLabel = {easy:'Facile', medium:'Moyen', hard:'Difficile'}[song.difficulty] || 'Moyen';
+    const isActive = currentSong && currentSong.id === song.id;
+    const duration = formatTime(song.duration);
+    const windows = song.cutoff_windows || [];
+    const windowsStr = windows.map(w => `${formatTime(w[0])}→${formatTime(w[1])}`).join(', ');
+
+    return `
+      <div class="song-item ${isActive ? 'active' : ''}" onclick="selectSong('${song.id}')">
+        <div class="song-info">
+          <div class="title">${song.title}</div>
+          <div class="artist">${song.artist}</div>
+          <div class="meta">${duration} • ✂ ${windowsStr}</div>
+        </div>
+        <div class="song-right">
+          ${!song.has_video ? '<span class="no-video-badge">SRT seul</span>' : ''}
+          <span class="difficulty ${song.difficulty}">${diffLabel}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function filterSongs() {
+  const q = document.getElementById('searchBox').value.toLowerCase().trim();
+  if (!q) {
+    renderSongList(songs);
+    return;
+  }
+  const filtered = songs.filter(s =>
+    s.title.toLowerCase().includes(q) ||
+    s.artist.toLowerCase().includes(q)
+  );
+  renderSongList(filtered);
+}
+
+function showLoading(show) {
+  document.getElementById('loadingOverlay').classList.toggle('hidden', !show);
+}
+
+// ============================================================
+// SONG SELECTION
+// ============================================================
+async function selectSong(id) {
+  resetGame();
+  showLoading(true);
+
+  try {
+    currentSong = await fetchSongDetail(id);
+  } catch (e) {
+    console.error('Erreur chargement chanson:', e);
+    showLoading(false);
+    return;
+  }
+
+  // Setup video
+  const placeholder = document.getElementById('placeholder');
+  if (currentSong.video_url) {
+    video.src = currentSong.video_url;
+    video.load();
+    placeholder.style.display = 'none';
+  } else {
+    video.removeAttribute('src');
+    placeholder.style.display = 'flex';
+    placeholder.querySelector('.msg').textContent = `🎵 ${currentSong.title} — ${currentSong.artist} (audio seul)`;
+  }
+
+  // Update UI
+  document.getElementById('totalTime').textContent = formatTime(currentSong.duration);
+  renderCutoffMarkers();
+
+  document.getElementById('btnPlay').disabled = false;
+  document.getElementById('scoreBox').style.display = 'block';
+
+  document.getElementById('subtitleText').innerHTML =
+    `<span class="word" style="color: var(--accent);">♪ ${currentSong.title} — ${currentSong.artist} ♪</span>`;
+
+  // Update active state in list
+  renderSongList(songs.length ? songs : [currentSong]);
+
+  showLoading(false);
+}
+
+async function pickRandom() {
+  if (songs.length === 0) return;
+  resetGame();
+  showLoading(true);
+
+  try {
+    const song = await fetchRandomSong();
+    // We have the full detail already from /api/random
+    currentSong = song;
+
+    const placeholder = document.getElementById('placeholder');
+    if (currentSong.video_url) {
+      video.src = currentSong.video_url;
+      video.load();
+      placeholder.style.display = 'none';
+    } else {
+      video.removeAttribute('src');
+      placeholder.style.display = 'flex';
+      placeholder.querySelector('.msg').textContent = `🎵 ${currentSong.title} — ${currentSong.artist}`;
+    }
+
+    document.getElementById('totalTime').textContent = formatTime(currentSong.duration);
+    renderCutoffMarkers();
+
+    document.getElementById('btnPlay').disabled = false;
+    document.getElementById('scoreBox').style.display = 'block';
+    document.getElementById('subtitleText').innerHTML =
+      `<span class="word" style="color: var(--accent);">🎲 ${currentSong.title} — ${currentSong.artist} ♪</span>`;
+
+    renderSongList(songs);
+  } catch (e) {
+    console.error('Erreur random:', e);
+  }
+  showLoading(false);
+}
+
+// ============================================================
+// PLAYBACK
+// ============================================================
+function togglePlay() {
+  if (!currentSong) return;
+  if (video.paused || !video.src) {
+    play();
+  } else {
+    pause();
+  }
+}
+
+function play() {
+  if (currentSong.video_url && video.src) {
+    video.play().catch(() => {});
+  }
+  document.getElementById('btnPlay').innerHTML = '⏸ Pause';
+  document.getElementById('btnCutoff').disabled = false;
+  updateStatus(isMuted ? 'muted' : 'playing');
+  startSubtitleLoop();
+}
+
+function pause() {
+  if (video.src) video.pause();
+  document.getElementById('btnPlay').innerHTML = '▶ Jouer';
+  updateStatus('paused');
+  stopSubtitleLoop();
+}
+
+function startSubtitleLoop() {
+  stopSubtitleLoop();
+  subtitleInterval = setInterval(updateSubtitles, 80);
+}
+
+function stopSubtitleLoop() {
+  if (subtitleInterval) clearInterval(subtitleInterval);
+  subtitleInterval = null;
+}
+
+function getCurrentTime() {
+  if (video.src && !isNaN(video.currentTime)) return video.currentTime;
+  return 0;
+}
+
+function updateSubtitles() {
+  if (!currentSong || !currentSong.lyrics) return;
+  const t = getCurrentTime();
+
+  // Update progress
+  const duration = currentSong.duration || video.duration || 1;
+  const pct = Math.min((t / duration) * 100, 100);
+  document.getElementById('progressBar').style.width = `${pct}%`;
+  document.getElementById('currentTime').textContent = formatTime(t);
+
+  // Auto cutoff/unmute based on windows
+  const windows = currentSong.cutoff_windows || [];
+  const inWindow = windows.findIndex(w => t >= w[0] && t < w[1]);
+
+  if (inWindow !== -1 && !isMuted) {
+    // Entering a cutoff window
+    currentWindowIdx = inWindow;
+    triggerCutoff();
+  } else if (inWindow === -1 && isMuted) {
+    // Exiting a cutoff window → restore sound
+    restoreSound();
+  }
+
+  // End detection
+  if (t >= duration - 0.2 && t > 0) {
+    pause();
+    showFinalScore();
+    return;
+  }
+
+  // Find current lyric line
+  const currentLine = currentSong.lyrics.find(l => t >= l.start && t < l.end);
+  const subtitleEl = document.getElementById('subtitleText');
+
+  if (currentLine) {
+    const words = currentLine.text.split(/\s+/);
+    const lineIdx = currentSong.lyrics.indexOf(currentLine);
+    const wordProgress = (t - currentLine.start) / (currentLine.end - currentLine.start);
+    const highlightIdx = Math.floor(wordProgress * words.length);
+
+    const isInCutoffWindow = isTimeInCutoffWindow(currentLine.start);
+
+    const html = words.map((word, i) => {
+      const isHidden = isMuted && isInCutoffWindow;
+      const key = `${lineIdx}-${i}`;
+      const isRevealed = revealedWords.has(key);
+
+      if (isHidden && !isRevealed) {
+        return `<span class="word hidden-word" data-word="${escapeHtml(word)}">${escapeHtml(word)}</span>`;
+      } else if (isRevealed) {
+        return `<span class="word revealed">${escapeHtml(word)}</span>`;
+      } else {
+        const cls = i === highlightIdx ? 'highlighted' : '';
+        return `<span class="word ${cls}">${escapeHtml(word)}</span>`;
+      }
+    }).join(' ');
+
+    subtitleEl.innerHTML = html;
+  } else {
+    if (!isMuted) {
+      subtitleEl.innerHTML = '<span class="word" style="color:var(--text-dim)">♪ ♪ ♪</span>';
+    } else {
+      subtitleEl.innerHTML = '<span class="word" style="color:var(--danger)">🔇 À vous de chanter !</span>';
+    }
+  }
+}
+
+// ============================================================
+// GAME MECHANICS
+// ============================================================
+function triggerCutoff() {
+  if (isMuted) return;
+  isMuted = true;
+
+  // Mute video
+  savedVolume = video.volume;
+  video.volume = 0;
+
+  updateStatus('muted');
+  document.getElementById('btnCutoff').disabled = true;
+  document.getElementById('btnReveal').disabled = false;
+  document.getElementById('guessArea').classList.add('active');
+  document.getElementById('guessInput').focus();
+
+  buildHiddenWords();
+}
+
+function restoreSound() {
+  if (!isMuted) return;
+  isMuted = false;
+  currentWindowIdx = -1;
+
+  // Restore volume
+  video.volume = savedVolume;
+
+  updateStatus('playing');
+  document.getElementById('btnCutoff').disabled = false;
+}
+
+function buildHiddenWords() {
+  hiddenWordIndices = [];
+  const windows = currentSong.cutoff_windows || [];
+
+  currentSong.lyrics.forEach((line, lineIdx) => {
+    if (isTimeInCutoffWindow(line.start)) {
+      const words = line.text.split(/\s+/);
+      words.forEach((word, wordIdx) => {
+        // Avoid duplicates if already added
+        const key = `${lineIdx}-${wordIdx}`;
+        if (!hiddenWordIndices.find(h => h.lineIdx === lineIdx && h.wordIdx === wordIdx)) {
+          hiddenWordIndices.push({ lineIdx, wordIdx, word });
+        }
+      });
+    }
+  });
+}
+
+function isTimeInCutoffWindow(t) {
+  const windows = currentSong.cutoff_windows || [];
+  return windows.some(w => t >= w[0] && t < w[1]);
+}
+
+function checkGuess() {
+  const input = document.getElementById('guessInput');
+  const feedback = document.getElementById('guessFeedback');
+  const guess = normalize(input.value.trim());
+  if (!guess) return;
+
+  let found = false;
+  let foundWord = '';
+
+  for (const { lineIdx, wordIdx, word } of hiddenWordIndices) {
+    const key = `${lineIdx}-${wordIdx}`;
+    if (revealedWords.has(key)) continue;
+
+    const cleanWord = normalize(word.replace(/[^a-zA-ZÀ-ÿ]/g, ''));
+    if (cleanWord === guess.replace(/[^a-zA-ZÀ-ÿ]/g, '')) {
+      // Reveal ALL instances of this word
+      for (const item of hiddenWordIndices) {
+        const itemClean = normalize(item.word.replace(/[^a-zA-ZÀ-ÿ]/g, ''));
+        if (itemClean === cleanWord) {
+          const k = `${item.lineIdx}-${item.wordIdx}`;
+          if (!revealedWords.has(k)) {
+            revealedWords.add(k);
+            score += 10;
+          }
+        }
+      }
+      found = true;
+      foundWord = word;
+      break;
+    }
+  }
+
+  if (found) {
+    document.getElementById('scoreValue').textContent = score;
+    input.value = '';
+    input.style.borderColor = 'var(--success)';
+    feedback.innerHTML = `<span style="color:var(--success)">✓ "${foundWord}" trouvé !</span>`;
+    setTimeout(() => { input.style.borderColor = '#333'; }, 600);
+    checkWin();
+  } else {
+    input.style.borderColor = 'var(--danger)';
+    feedback.innerHTML = `<span style="color:var(--danger)">✗ Essayez encore...</span>`;
+    setTimeout(() => { input.style.borderColor = '#333'; }, 600);
+  }
+}
+
+function revealNext() {
+  for (const { lineIdx, wordIdx } of hiddenWordIndices) {
+    const key = `${lineIdx}-${wordIdx}`;
+    if (!revealedWords.has(key)) {
+      revealedWords.add(key);
+      return;
+    }
+  }
+}
+
+function checkWin() {
+  const total = hiddenWordIndices.length;
+  const found = revealedWords.size;
+  if (found >= total) {
+    document.getElementById('guessFeedback').innerHTML =
+      `<span style="color:var(--accent)">🏆 Toutes les paroles trouvées ! Bravo !</span>`;
+  }
+}
+
+function showFinalScore() {
+  const total = hiddenWordIndices.length * 10;
+  const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+  const emoji = pct >= 80 ? '🏆' : pct >= 50 ? '👏' : '😅';
+
+  document.getElementById('subtitleText').innerHTML =
+    `<span class="word" style="color: var(--accent);">${emoji} Terminé ! Score : ${score}/${total} (${pct}%)</span>`;
+}
+
+function resetGame() {
+  pause();
+  isMuted = false;
+  currentWindowIdx = -1;
+  score = 0;
+  revealedWords = new Set();
+  hiddenWordIndices = [];
+
+  video.volume = savedVolume;
+  video.currentTime = 0;
+
+  document.getElementById('scoreValue').textContent = '0';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('currentTime').textContent = '0:00';
+  document.getElementById('btnPlay').innerHTML = '▶ Jouer';
+  document.getElementById('btnCutoff').disabled = true;
+  document.getElementById('btnReveal').disabled = true;
+  document.getElementById('guessArea').classList.remove('active');
+  document.getElementById('guessFeedback').innerHTML = '';
+  document.getElementById('cutoffMarkers').innerHTML = '';
+  updateStatus('paused');
+
+  if (currentSong) {
+    document.getElementById('subtitleText').innerHTML =
+      `<span class="word" style="color: var(--accent);">♪ ${currentSong.title} — ${currentSong.artist} ♪</span>`;
+  }
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function updateStatus(type) {
+  const pill = document.getElementById('statusPill');
+  pill.className = 'status-pill ' + type;
+  const labels = { playing: '▶ En lecture', muted: '🔇 Son coupé', paused: '⏸ En attente' };
+  pill.innerHTML = labels[type] || '';
+}
+
+function formatTime(sec) {
+  if (!sec || isNaN(sec)) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function normalize(str) {
+  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ============================================================
+// VOLUME CONTROL
+// ============================================================
+function setVolume(val) {
+  const vol = val / 100;
+  video.volume = vol;
+  savedVolume = vol;
+  document.getElementById('volumePct').textContent = `${Math.round(val)}%`;
+  updateVolIcon(vol);
+}
+
+function toggleMuteManual() {
+  if (video.volume > 0) {
+    savedVolume = video.volume;
+    video.volume = 0;
+    document.getElementById('volumeSlider').value = 0;
+    document.getElementById('volumePct').textContent = '0%';
+  } else {
+    video.volume = savedVolume || 0.8;
+    document.getElementById('volumeSlider').value = Math.round(video.volume * 100);
+    document.getElementById('volumePct').textContent = `${Math.round(video.volume * 100)}%`;
+  }
+  updateVolIcon(video.volume);
+}
+
+function updateVolIcon(vol) {
+  const icon = document.getElementById('volIcon');
+  if (vol === 0) icon.textContent = '🔇';
+  else if (vol < 0.35) icon.textContent = '🔈';
+  else if (vol < 0.7) icon.textContent = '🔉';
+  else icon.textContent = '🔊';
+}
+
+// ============================================================
+// CUTOFF WINDOW MARKERS
+// ============================================================
+function renderCutoffMarkers() {
+  const container = document.getElementById('cutoffMarkers');
+  const infoEl = document.getElementById('cutoffInfo');
+  const windows = currentSong.cutoff_windows || [];
+  const duration = currentSong.duration || 1;
+
+  // Render markers on progress bar
+  container.innerHTML = windows.map(w => {
+    const leftPct = (w[0] / duration) * 100;
+    const widthPct = ((w[1] - w[0]) / duration) * 100;
+    return `<div class="cutoff-window-marker" style="left:${leftPct}%;width:${widthPct}%"></div>`;
+  }).join('');
+
+  // Info text
+  const windowsStr = windows.map(w => `${formatTime(w[0])}→${formatTime(w[1])}`).join(' | ');
+  infoEl.textContent = `✂ ${windowsStr}`;
+}
+
+// Progress bar seeking
+document.getElementById('progressContainer').addEventListener('click', (e) => {
+  if (!currentSong) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const duration = currentSong.duration || video.duration || 1;
+  const newTime = pct * duration;
+  if (video.src) video.currentTime = newTime;
+});
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  showLoading(true);
+  songs = await fetchSongs();
+  renderSongList(songs);
+  showLoading(false);
+}
+
+init();
+</script>
+</body>
+</html>
