@@ -250,7 +250,7 @@ def scan_library_local(videos_dir):
             "folder": folder.name,
         }
         songs.append(song)
-        windows_str = ", ".join(f"{w[0]:.0f}s→{w[1]:.0f}s" for w in cutoff_windows)
+        windows_str = ", ".join(f"{float(w[0]):.0f}s→{float(w[1]):.0f}s" for w in cutoff_windows)
         print(f"  🎬 {song['title']} — {song['artist']} ({len(lyrics)} cues, coupures: {windows_str})")
 
     return songs
@@ -310,7 +310,7 @@ def scan_library_r2():
             "folder": folder,
         }
         songs.append(song)
-        windows_str = ", ".join(f"{w[0]:.0f}s→{w[1]:.0f}s" for w in cutoff_windows)
+        windows_str = ", ".join(f"{float(w[0]):.0f}s→{float(w[1]):.0f}s" for w in cutoff_windows)
         status = "🎬" if has_video else "🎵"
         print(f"  {status} {song['title']} — {song['artist']} ({len(lyrics)} cues, coupures: {windows_str})")
 
