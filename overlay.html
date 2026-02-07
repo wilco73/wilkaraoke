@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎤 Overlay — N'oubliez pas les Paroles</title>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent: #f7b731;
+    --pink: #e84393;
+    --success: #00b894;
+    --danger: #d63031;
+    --text: #f0f0f0;
+    --text-dim: #8888aa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: transparent;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  /* ---- Layout ---- */
+  .overlay {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ---- Video area ---- */
+  .video-area {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .video-area video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  /* ---- Top bar (score + status) ---- */
+  .top-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 16px 20px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .score-box {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(12px);
+    padding: 8px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .score-box.visible { opacity: 1; }
+
+  .score-box .label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+  }
+  .score-box .value {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 1.6rem;
+    color: var(--accent);
+    line-height: 1.2;
+  }
+
+  .status-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    backdrop-filter: blur(12px);
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .status-badge.visible { opacity: 1; }
+  .status-badge.muted {
+    background: rgba(214, 48, 49, 0.4);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    animation: pulse 1s infinite;
+  }
+  .status-badge.playing {
+    background: rgba(247, 183, 49, 0.3);
+    color: var(--accent);
+    border: 1px solid rgba(247,183,49,0.4);
+  }
+
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+  /* ---- Song info banner ---- */
+  .song-banner {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.8s;
+  }
+  .song-banner.visible { opacity: 1; }
+
+  .song-banner .title {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 1.3rem;
+    color: var(--accent);
+    text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+  }
+  .song-banner .artist {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    margin-top: 2px;
+  }
+
+  /* ---- Subtitle bar ---- */
+  .subtitle-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 20px 40px 28px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.85));
+    text-align: center;
+    min-height: 90px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .subtitle-text {
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1.6;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.5);
+  }
+
+  .subtitle-text .word {
+    display: inline-block;
+    margin: 0 4px;
+    padding: 2px 5px;
+    border-radius: 5px;
+    transition: all 0.25s;
+  }
+
+  .word.highlighted {
+    color: var(--accent);
+    transform: scale(1.1);
+  }
+
+  .word.hidden-word {
+    background: rgba(255, 255, 255, 0.12);
+    color: transparent;
+    border-radius: 8px;
+    min-width: 60px;
+    position: relative;
+  }
+  .word.hidden-word::after {
+    content: '____';
+    color: rgba(255,255,255,0.35);
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1rem;
+    letter-spacing: 3px;
+  }
+
+  .word.revealed {
+    background: rgba(0, 184, 148, 0.3);
+    color: var(--success);
+    animation: revealPop 0.4s ease;
+  }
+
+  @keyframes revealPop {
+    0% { transform: scale(1.4); }
+    50% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+  }
+
+  /* ---- Waiting state ---- */
+  .waiting-screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 5;
+    opacity: 1;
+    transition: opacity 0.5s;
+  }
+  .waiting-screen.hidden { opacity: 0; pointer-events: none; }
+
+  .waiting-screen .logo {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 2rem;
+    background: linear-gradient(135deg, var(--accent), var(--pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .waiting-screen .hint {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+  }
+
+  /* ---- Progress bar ---- */
+  .progress-strip {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 4px;
+    z-index: 20;
+  }
+  .progress-strip .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--pink));
+    transition: width 0.2s linear;
+  }
+</style>
+</head>
+<body>
+
+<div class="overlay">
+  <!-- Waiting screen -->
+  <div class="waiting-screen" id="waitingScreen">
+    <div class="logo">🎤 N'oubliez pas les Paroles</div>
+    <div class="hint">En attente d'une chanson...</div>
+  </div>
+
+  <!-- Video -->
+  <div class="video-area">
+    <video id="overlayVideo" playsinline crossorigin="anonymous"></video>
+  </div>
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <div class="score-box" id="scoreBox">
+      <div class="label">Score</div>
+      <div class="value" id="scoreValue">0</div>
+    </div>
+    <div class="status-badge" id="statusBadge"></div>
+  </div>
+
+  <!-- Song banner -->
+  <div class="song-banner" id="songBanner">
+    <div class="title" id="bannerTitle"></div>
+    <div class="artist" id="bannerArtist"></div>
+  </div>
+
+  <!-- Subtitles -->
+  <div class="subtitle-bar">
+    <div class="subtitle-text" id="subtitleText"></div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-strip">
+    <div class="fill" id="progressFill" style="width:0%"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// OVERLAY — polls server state and renders in sync
+// ============================================================
+const API = '';
+const video = document.getElementById('overlayVideo');
+
+let currentState = null;
+let currentSongId = null;
+let songData = null; // full song data with lyrics
+let lastRevealedCount = 0;
+
+// ============================================================
+// POLLING
+// ============================================================
+async function pollState() {
+  try {
+    const res = await fetch(`${API}/api/state`);
+    const state = await res.json();
+
+    if (!state.song_id) {
+      showWaiting(true);
+      return;
+    }
+
+    // Song changed?
+    if (state.song_id !== currentSongId) {
+      currentSongId = state.song_id;
+      songData = state; // state contains lyrics, cutoff_windows etc.
+      loadVideo(state);
+      showWaiting(false);
+      showSongBanner(state.song_title, state.song_artist);
+    }
+
+    currentState = state;
+    syncVideo(state);
+    renderOverlay(state);
+  } catch (e) {
+    // Server not available
+  }
+}
+
+function loadVideo(state) {
+  if (state.video_url && video.src !== state.video_url) {
+    video.src = state.video_url;
+    video.load();
+  }
+  video.volume = 0; // Overlay is silent — sound comes from the streamer's app
+}
+
+function syncVideo(state) {
+  // Sync play/pause
+  if (state.is_playing && video.paused) {
+    video.play().catch(() => {});
+  } else if (!state.is_playing && !video.paused) {
+    video.pause();
+  }
+
+  // Sync time (if drift > 1.5s)
+  if (video.src && !isNaN(video.currentTime)) {
+    const drift = Math.abs(video.currentTime - state.current_time);
+    if (drift > 1.5) {
+      video.currentTime = state.current_time;
+    }
+  }
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+function renderOverlay(state) {
+  const revealedSet = new Set(state.revealed_words || []);
+  const lyrics = state.lyrics || [];
+  const t = state.current_time || 0;
+  const duration = state.duration || 1;
+  const windows = state.cutoff_windows || [];
+
+  // Score
+  document.getElementById('scoreBox').classList.toggle('visible', state.score > 0 || state.is_muted);
+  document.getElementById('scoreValue').textContent = state.score || 0;
+
+  // Status badge
+  const badge = document.getElementById('statusBadge');
+  if (state.is_muted) {
+    badge.className = 'status-badge muted visible';
+    badge.textContent = '🔇 SON COUPÉ';
+  } else if (state.is_playing) {
+    badge.className = 'status-badge playing visible';
+    badge.textContent = '♪ EN LECTURE';
+  } else {
+    badge.className = 'status-badge';
+  }
+
+  // Progress
+  const pct = Math.min((t / duration) * 100, 100);
+  document.getElementById('progressFill').style.width = `${pct}%`;
+
+  // Subtitles
+  const currentLine = lyrics.find(l => t >= l.start && t < l.end);
+  const subtitleEl = document.getElementById('subtitleText');
+
+  if (currentLine) {
+    const words = currentLine.text.split(/\s+/);
+    const lineIdx = lyrics.indexOf(currentLine);
+    const wordProgress = (t - currentLine.start) / (currentLine.end - currentLine.start);
+    const highlightIdx = Math.floor(wordProgress * words.length);
+
+    const lineInWindow = windows.some(w => currentLine.start >= w[0] && currentLine.start < w[1]);
+
+    const html = words.map((word, i) => {
+      const key = `${lineIdx}-${i}`;
+      const isRevealed = revealedSet.has(key);
+      const isHidden = lineInWindow && !isRevealed;
+
+      if (isHidden) {
+        return `<span class="word hidden-word">${esc(word)}</span>`;
+      } else if (isRevealed) {
+        return `<span class="word revealed">${esc(word)}</span>`;
+      } else {
+        const cls = (!state.is_muted && i === highlightIdx) ? 'highlighted' : '';
+        return `<span class="word ${cls}">${esc(word)}</span>`;
+      }
+    }).join(' ');
+
+    subtitleEl.innerHTML = html;
+  } else {
+    if (state.is_muted) {
+      subtitleEl.innerHTML = '<span class="word" style="color:var(--danger);font-size:1.3rem;">🔇 À vous de chanter !</span>';
+    } else if (state.is_playing) {
+      subtitleEl.innerHTML = '<span class="word" style="color:var(--text-dim);">♪ ♪ ♪</span>';
+    } else {
+      subtitleEl.innerHTML = '';
+    }
+  }
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showWaiting(show) {
+  document.getElementById('waitingScreen').classList.toggle('hidden', !show);
+}
+
+let bannerTimeout = null;
+function showSongBanner(title, artist) {
+  const banner = document.getElementById('songBanner');
+  document.getElementById('bannerTitle').textContent = `♪ ${title}`;
+  document.getElementById('bannerArtist').textContent = artist;
+  banner.classList.add('visible');
+
+  // Auto-hide after 5s
+  if (bannerTimeout) clearTimeout(bannerTimeout);
+  bannerTimeout = setTimeout(() => {
+    banner.classList.remove('visible');
+  }, 5000);
+}
+
+function esc(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ============================================================
+// START POLLING
+// ============================================================
+setInterval(pollState, 200);
+pollState();
+</script>
+</body>
+</html>

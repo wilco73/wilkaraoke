@@ -328,6 +328,22 @@ def scan_library():
 # ============================================================
 # HTTP SERVER
 # ============================================================
+# ============================================================
+# GAME STATE (shared between regie and overlay)
+# ============================================================
+game_state = {
+    "song_id": None,
+    "is_playing": False,
+    "is_muted": False,
+    "current_time": 0,
+    "score": 0,
+    "revealed_words": [],   # list of "lineIdx-wordIdx" keys
+    "window_idx": -1,
+    "timestamp": 0,         # server timestamp for sync
+}
+state_lock = threading.Lock()
+
+
 songs_cache = []
 songs_lock = threading.Lock()
 
@@ -375,6 +391,12 @@ class GameHandler(http.server.BaseHTTPRequestHandler):
             self.send_json({"songs": data, "message": "OK"})
             return
 
+        # --- Game state (overlay reads this) ---
+        if path == "/api/state":
+            with state_lock:
+                self.send_json(game_state)
+            return
+
         # --- Serve local videos (local mode only) ---
         if not IS_CLOUD and path.startswith("/videos/"):
             self.serve_local_file(path)
@@ -382,7 +404,34 @@ class GameHandler(http.server.BaseHTTPRequestHandler):
 
         # --- Frontend ---
         if path == "/" or path == "/index.html":
-            self.serve_frontend()
+            self.serve_frontend("index.html")
+            return
+
+        # --- Overlay ---
+        if path == "/overlay" or path == "/overlay.html":
+            self.serve_frontend("overlay.html")
+            return
+
+        self.send_error(404)
+
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+
+        # --- Game state update (regie pushes this) ---
+        if path == "/api/state":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(length)
+                data = json.loads(body.decode("utf-8"))
+
+                with state_lock:
+                    game_state.update(data)
+                    game_state["timestamp"] = time.time()
+
+                self.send_json({"ok": True})
+            except Exception as e:
+                self.send_json({"error": str(e)}, 400)
             return
 
         self.send_error(404)
@@ -454,12 +503,12 @@ class GameHandler(http.server.BaseHTTPRequestHandler):
                     break
                 self.wfile.write(chunk)
 
-    def serve_frontend(self):
-        frontend_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
+    def serve_frontend(self, filename="index.html"):
+        frontend_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
         if not os.path.isfile(frontend_path):
-            self.send_response(500)
+            self.send_response(404)
             self.end_headers()
-            self.wfile.write(b"index.html not found")
+            self.wfile.write(f"{filename} not found".encode())
             return
 
         with open(frontend_path, "r", encoding="utf-8") as f:
