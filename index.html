@@ -595,6 +595,69 @@
     box-shadow: 0 0 6px rgba(214, 48, 49, 0.3);
     pointer-events: none;
   }
+
+  /* ---- Window progress indicator ---- */
+  .window-progress {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin: 10px 0;
+    border: 1px solid #222244;
+    display: none;
+  }
+
+  .window-progress.active { display: block; animation: slideUp 0.3s ease; }
+
+  .window-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .window-progress-header .wp-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+
+  .window-progress-header .wp-count {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  .wp-bar-container {
+    height: 8px;
+    background: #2a2a4a;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .wp-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease, background 0.3s;
+    background: linear-gradient(90deg, var(--accent), var(--pink));
+  }
+
+  .wp-bar-fill.complete {
+    background: linear-gradient(90deg, var(--success), var(--blue));
+  }
+
+  .window-complete-msg {
+    margin-top: 8px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--success);
+    display: none;
+    animation: revealPop 0.5s ease;
+  }
+
+  .window-complete-msg.show { display: block; }
 </style>
 </head>
 <body>
@@ -664,11 +727,28 @@
     <h3>🎤 Devinez les paroles</h3>
     <div class="guess-input-row">
       <input type="text" class="guess-input" id="guessInput"
-             placeholder="Tapez un mot des paroles..."
+             placeholder="Tapez un ou plusieurs mots..."
              onkeydown="if(event.key==='Enter') checkGuess()" autocomplete="off">
       <button class="btn btn-primary" onclick="checkGuess()">OK</button>
     </div>
     <div class="guess-feedback" id="guessFeedback"></div>
+    <div style="margin-top:8px;font-size:0.78rem;color:var(--text-dim)">
+      💡 Vous pouvez taper plusieurs mots ou une phrase entière. Appuyez sur ▶ pour continuer la musique.
+    </div>
+  </div>
+
+  <!-- Window Progress -->
+  <div class="window-progress" id="windowProgress">
+    <div class="window-progress-header">
+      <span class="wp-label" id="wpLabel">Fenêtre 1/1</span>
+      <span class="wp-count" id="wpCount">0 / 0 mots</span>
+    </div>
+    <div class="wp-bar-container">
+      <div class="wp-bar-fill" id="wpBarFill" style="width:0%"></div>
+    </div>
+    <div class="window-complete-msg" id="wpComplete">
+      ✅ Fenêtre complète ! Appuyez sur ▶ Reprendre pour continuer
+    </div>
   </div>
 
   <!-- Library -->
@@ -927,8 +1007,8 @@ function play() {
 
 function pause() {
   if (video.src) video.pause();
-  document.getElementById('btnPlay').innerHTML = '▶ Jouer';
-  updateStatus('paused');
+  document.getElementById('btnPlay').innerHTML = '▶ Reprendre';
+  updateStatus(isMuted ? 'muted' : 'paused');
   stopSubtitleLoop();
 }
 
@@ -962,9 +1042,10 @@ function updateSubtitles() {
   const inWindow = windows.findIndex(w => t >= w[0] && t < w[1]);
 
   if (inWindow !== -1 && !isMuted) {
-    // Entering a cutoff window
+    // Entering a cutoff window → mute + auto pause
     currentWindowIdx = inWindow;
     triggerCutoff();
+    return; // pause stops the loop
   } else if (inWindow === -1 && isMuted) {
     // Exiting a cutoff window → restore sound
     restoreSound();
@@ -978,6 +1059,10 @@ function updateSubtitles() {
   }
 
   // Find current lyric line
+  renderCurrentSubtitle(t);
+}
+
+function renderCurrentSubtitle(t) {
   const currentLine = currentSong.lyrics.find(l => t >= l.start && t < l.end);
   const subtitleEl = document.getElementById('subtitleText');
 
@@ -987,19 +1072,19 @@ function updateSubtitles() {
     const wordProgress = (t - currentLine.start) / (currentLine.end - currentLine.start);
     const highlightIdx = Math.floor(wordProgress * words.length);
 
-    const isInCutoffWindow = isTimeInCutoffWindow(currentLine.start);
+    const lineInWindow = isTimeInCutoffWindow(currentLine.start);
 
     const html = words.map((word, i) => {
-      const isHidden = isMuted && isInCutoffWindow;
       const key = `${lineIdx}-${i}`;
       const isRevealed = revealedWords.has(key);
+      const isHidden = lineInWindow && !isRevealed;
 
-      if (isHidden && !isRevealed) {
+      if (isHidden) {
         return `<span class="word hidden-word" data-word="${escapeHtml(word)}">${escapeHtml(word)}</span>`;
       } else if (isRevealed) {
         return `<span class="word revealed">${escapeHtml(word)}</span>`;
       } else {
-        const cls = i === highlightIdx ? 'highlighted' : '';
+        const cls = (!isMuted && i === highlightIdx) ? 'highlighted' : '';
         return `<span class="word ${cls}">${escapeHtml(word)}</span>`;
       }
     }).join(' ');
@@ -1025,13 +1110,24 @@ function triggerCutoff() {
   savedVolume = video.volume;
   video.volume = 0;
 
+  // Build hidden words for ALL windows (not just current)
+  buildAllHiddenWords();
+
+  // Auto-pause so the player has time to answer
+  pause();
+
   updateStatus('muted');
   document.getElementById('btnCutoff').disabled = true;
   document.getElementById('btnReveal').disabled = false;
   document.getElementById('guessArea').classList.add('active');
   document.getElementById('guessInput').focus();
 
-  buildHiddenWords();
+  // Show window progress
+  document.getElementById('windowProgress').classList.add('active');
+  updateWindowProgress();
+
+  // Show the hidden lyrics for the current position
+  renderCurrentSubtitle(getCurrentTime());
 }
 
 function restoreSound() {
@@ -1044,21 +1140,23 @@ function restoreSound() {
 
   updateStatus('playing');
   document.getElementById('btnCutoff').disabled = false;
+  // Keep guess area open — player might still want to type for next window
 }
 
-function buildHiddenWords() {
+function buildAllHiddenWords() {
+  // Only rebuild if not already built (avoid wiping progress on re-entry)
+  if (hiddenWordIndices.length > 0) return;
+
   hiddenWordIndices = [];
   const windows = currentSong.cutoff_windows || [];
 
   currentSong.lyrics.forEach((line, lineIdx) => {
-    if (isTimeInCutoffWindow(line.start)) {
+    // Check which window this line belongs to
+    const winIdx = windows.findIndex(w => line.start >= w[0] && line.start < w[1]);
+    if (winIdx !== -1) {
       const words = line.text.split(/\s+/);
       words.forEach((word, wordIdx) => {
-        // Avoid duplicates if already added
-        const key = `${lineIdx}-${wordIdx}`;
-        if (!hiddenWordIndices.find(h => h.lineIdx === lineIdx && h.wordIdx === wordIdx)) {
-          hiddenWordIndices.push({ lineIdx, wordIdx, word });
-        }
+        hiddenWordIndices.push({ lineIdx, wordIdx, word, windowIdx: winIdx });
       });
     }
   });
@@ -1069,68 +1167,209 @@ function isTimeInCutoffWindow(t) {
   return windows.some(w => t >= w[0] && t < w[1]);
 }
 
+// ============================================================
+// MULTI-WORD FLEXIBLE MATCHING
+// ============================================================
 function checkGuess() {
   const input = document.getElementById('guessInput');
   const feedback = document.getElementById('guessFeedback');
-  const guess = normalize(input.value.trim());
-  if (!guess) return;
+  const rawGuess = input.value.trim();
+  if (!rawGuess) return;
 
-  let found = false;
-  let foundWord = '';
+  // Split input into individual words
+  const guessWords = rawGuess.split(/\s+/).map(w => normalizeWord(w)).filter(w => w.length > 0);
+  if (guessWords.length === 0) return;
 
-  for (const { lineIdx, wordIdx, word } of hiddenWordIndices) {
-    const key = `${lineIdx}-${wordIdx}`;
-    if (revealedWords.has(key)) continue;
+  let totalFound = 0;
+  let foundDisplayWords = [];
 
-    const cleanWord = normalize(word.replace(/[^a-zA-ZÀ-ÿ]/g, ''));
-    if (cleanWord === guess.replace(/[^a-zA-ZÀ-ÿ]/g, '')) {
-      // Reveal ALL instances of this word
-      for (const item of hiddenWordIndices) {
-        const itemClean = normalize(item.word.replace(/[^a-zA-ZÀ-ÿ]/g, ''));
-        if (itemClean === cleanWord) {
-          const k = `${item.lineIdx}-${item.wordIdx}`;
-          if (!revealedWords.has(k)) {
-            revealedWords.add(k);
+  // For each guess word, try to match hidden words
+  for (const guessWord of guessWords) {
+    // Find all unrevealed hidden words that match this guess
+    for (const item of hiddenWordIndices) {
+      const key = `${item.lineIdx}-${item.wordIdx}`;
+      if (revealedWords.has(key)) continue;
+
+      const hiddenClean = normalizeWord(item.word);
+      if (hiddenClean.length === 0) continue;
+
+      if (wordsMatch(guessWord, hiddenClean)) {
+        // Reveal ALL instances of this word across all windows
+        const matchNorm = hiddenClean;
+        for (const other of hiddenWordIndices) {
+          const otherKey = `${other.lineIdx}-${other.wordIdx}`;
+          if (revealedWords.has(otherKey)) continue;
+          if (normalizeWord(other.word) === matchNorm) {
+            revealedWords.add(otherKey);
             score += 10;
+            totalFound++;
           }
         }
+        foundDisplayWords.push(item.word);
+        break; // Move to next guess word
       }
-      found = true;
-      foundWord = word;
-      break;
     }
   }
 
-  if (found) {
+  if (totalFound > 0) {
     document.getElementById('scoreValue').textContent = score;
     input.value = '';
     input.style.borderColor = 'var(--success)';
-    feedback.innerHTML = `<span style="color:var(--success)">✓ "${foundWord}" trouvé !</span>`;
+
+    const wordsStr = foundDisplayWords.map(w => `"${w}"`).join(', ');
+    const countInfo = totalFound > foundDisplayWords.length
+      ? ` (+${totalFound - foundDisplayWords.length} identiques)`
+      : '';
+    feedback.innerHTML = `<span style="color:var(--success)">✓ ${wordsStr} trouvé !${countInfo}</span>`;
+
     setTimeout(() => { input.style.borderColor = '#333'; }, 600);
+
+    // Refresh subtitle display
+    renderCurrentSubtitle(getCurrentTime());
     checkWin();
   } else {
     input.style.borderColor = 'var(--danger)';
-    feedback.innerHTML = `<span style="color:var(--danger)">✗ Essayez encore...</span>`;
+    feedback.innerHTML = `<span style="color:var(--danger)">✗ Pas trouvé... Réessayez !</span>`;
     setTimeout(() => { input.style.borderColor = '#333'; }, 600);
   }
 }
 
+function normalizeWord(str) {
+  // Remove punctuation, accents, lowercase
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')  // remove accents
+    .replace(/[^a-z0-9]/g, '');       // remove punctuation
+}
+
+function wordsMatch(guess, target) {
+  // Exact match
+  if (guess === target) return true;
+
+  // Flexible: allow 1 character difference for words > 3 chars (typo tolerance)
+  if (guess.length > 3 && target.length > 3) {
+    const dist = levenshtein(guess, target);
+    if (dist <= 1) return true;
+  }
+
+  // Allow missing trailing 's' or 'e' (common French flex)
+  if (guess + 's' === target || guess + 'e' === target) return true;
+  if (target + 's' === guess || target + 'e' === guess) return true;
+
+  return false;
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m + 1}, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = Math.min(
+        dp[i-1][j] + 1,
+        dp[i][j-1] + 1,
+        dp[i-1][j-1] + (a[i-1] !== b[j-1] ? 1 : 0)
+      );
+    }
+  }
+  return dp[m][n];
+}
+
 function revealNext() {
-  for (const { lineIdx, wordIdx } of hiddenWordIndices) {
-    const key = `${lineIdx}-${wordIdx}`;
+  // Reveal next word in current window first, then others
+  const winIdx = currentWindowIdx >= 0 ? currentWindowIdx : 0;
+
+  // Try current window first
+  for (const item of hiddenWordIndices) {
+    if (item.windowIdx !== winIdx) continue;
+    const key = `${item.lineIdx}-${item.wordIdx}`;
     if (!revealedWords.has(key)) {
       revealedWords.add(key);
+      renderCurrentSubtitle(getCurrentTime());
+      updateWindowProgress();
+      return;
+    }
+  }
+  // Then any other window
+  for (const item of hiddenWordIndices) {
+    const key = `${item.lineIdx}-${item.wordIdx}`;
+    if (!revealedWords.has(key)) {
+      revealedWords.add(key);
+      renderCurrentSubtitle(getCurrentTime());
+      updateWindowProgress();
       return;
     }
   }
 }
 
 function checkWin() {
-  const total = hiddenWordIndices.length;
-  const found = revealedWords.size;
-  if (found >= total) {
+  updateWindowProgress();
+
+  // Count unrevealed words across ALL windows
+  let remaining = 0;
+  for (const item of hiddenWordIndices) {
+    const key = `${item.lineIdx}-${item.wordIdx}`;
+    if (!revealedWords.has(key)) remaining++;
+  }
+
+  if (remaining === 0) {
     document.getElementById('guessFeedback').innerHTML =
       `<span style="color:var(--accent)">🏆 Toutes les paroles trouvées ! Bravo !</span>`;
+    document.getElementById('wpComplete').textContent = '🏆 Tout trouvé ! Bravo !';
+  }
+}
+
+function updateWindowProgress() {
+  const windows = currentSong.cutoff_windows || [];
+  const totalWindows = windows.length;
+  const winIdx = currentWindowIdx >= 0 ? currentWindowIdx : 0;
+
+  // Count words for current window
+  const windowWords = hiddenWordIndices.filter(h => h.windowIdx === winIdx);
+  const totalInWindow = windowWords.length;
+  const foundInWindow = windowWords.filter(h => {
+    const key = `${h.lineIdx}-${h.wordIdx}`;
+    return revealedWords.has(key);
+  }).length;
+
+  // Count total remaining across all windows
+  let totalRemaining = 0;
+  for (const item of hiddenWordIndices) {
+    const key = `${item.lineIdx}-${item.wordIdx}`;
+    if (!revealedWords.has(key)) totalRemaining++;
+  }
+
+  // Update labels
+  const label = document.getElementById('wpLabel');
+  label.textContent = totalWindows > 1
+    ? `Fenêtre ${winIdx + 1}/${totalWindows}`
+    : `Passage à deviner`;
+
+  const count = document.getElementById('wpCount');
+  count.textContent = `${foundInWindow} / ${totalInWindow} mots`;
+
+  // Update bar
+  const pct = totalInWindow > 0 ? (foundInWindow / totalInWindow) * 100 : 0;
+  const bar = document.getElementById('wpBarFill');
+  bar.style.width = `${pct}%`;
+
+  const completeMsg = document.getElementById('wpComplete');
+  const windowComplete = (foundInWindow === totalInWindow && totalInWindow > 0);
+
+  if (windowComplete) {
+    bar.classList.add('complete');
+    completeMsg.classList.add('show');
+
+    if (totalRemaining > 0) {
+      completeMsg.textContent = `✅ Fenêtre complète ! Appuyez sur ▶ Reprendre pour continuer (${totalRemaining} mots restants)`;
+    } else {
+      completeMsg.textContent = `🏆 Tout trouvé ! Bravo !`;
+    }
+  } else {
+    bar.classList.remove('complete');
+    completeMsg.classList.remove('show');
   }
 }
 
@@ -1163,6 +1402,8 @@ function resetGame() {
   document.getElementById('guessArea').classList.remove('active');
   document.getElementById('guessFeedback').innerHTML = '';
   document.getElementById('cutoffMarkers').innerHTML = '';
+  document.getElementById('windowProgress').classList.remove('active');
+  document.getElementById('wpComplete').classList.remove('show');
   updateStatus('paused');
 
   if (currentSong) {
