@@ -1109,10 +1109,16 @@ function renderCurrentSubtitle(t, force) {
       const key = `${lineIdx}-${i}`;
       const isRevealed = revealedWords.has(key);
       const isInHiddenList = hiddenWordIndices.some(h => h.lineIdx === lineIdx && h.wordIdx === i);
-      const isHidden = isInHiddenList && !isRevealed;
+      const isPunctOnly = normalizeWord(word).length === 0;
+      const isHidden = isInHiddenList && !isRevealed && !isPunctOnly;
 
       if (isHidden) {
-        return `<span class="word hidden-word">${escapeHtml(word)}</span>`;
+        // Extract leading/trailing punctuation to show in clear
+        const match = word.match(/^([^a-zA-ZÀ-ÿ0-9]*)(.*?)([^a-zA-ZÀ-ÿ0-9]*)$/);
+        const prefix = match ? match[1] : '';
+        const core = match ? match[2] : word;
+        const suffix = match ? match[3] : '';
+        return `${escapeHtml(prefix)}<span class="word hidden-word">${escapeHtml(core)}</span>${escapeHtml(suffix)}`;
       } else if (isRevealed) {
         return `<span class="word revealed-static">${escapeHtml(word)}</span>`;
       } else {
@@ -1195,12 +1201,15 @@ function buildAllHiddenWords() {
 
   currentSong.lyrics.forEach((line, lineIdx) => {
     // Check if this line overlaps with ANY cutoff window
-    // A line overlaps if it's not entirely before or entirely after the window
     const winIdx = windows.findIndex(w => line.end > w[0] && line.start < w[1]);
     if (winIdx !== -1) {
       const words = line.text.split(/\s+/);
       words.forEach((word, wordIdx) => {
-        hiddenWordIndices.push({ lineIdx, wordIdx, word, windowIdx: winIdx });
+        // Skip punctuation-only tokens (!, ..., ?, etc.)
+        const cleaned = normalizeWord(word);
+        if (cleaned.length > 0) {
+          hiddenWordIndices.push({ lineIdx, wordIdx, word, windowIdx: winIdx });
+        }
       });
     }
   });

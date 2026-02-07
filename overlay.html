@@ -401,10 +401,15 @@ function renderOverlay(state) {
     const html = words.map((word, i) => {
       const key = `${lineIdx}-${i}`;
       const isRevealed = revealedSet.has(key);
-      const isHidden = lineInWindow && !isRevealed;
+      const isPunctOnly = word.replace(/[^a-zA-ZÀ-ÿ0-9]/g, '').length === 0;
+      const isHidden = lineInWindow && !isRevealed && !isPunctOnly;
 
       if (isHidden) {
-        return `<span class="word hidden-word">${esc(word)}</span>`;
+        const match = word.match(/^([^a-zA-ZÀ-ÿ0-9]*)(.*?)([^a-zA-ZÀ-ÿ0-9]*)$/);
+        const prefix = match ? match[1] : '';
+        const core = match ? match[2] : word;
+        const suffix = match ? match[3] : '';
+        return `${esc(prefix)}<span class="word hidden-word">${esc(core)}</span>${esc(suffix)}`;
       } else if (isRevealed) {
         return `<span class="word revealed">${esc(word)}</span>`;
       } else {
