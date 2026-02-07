@@ -128,6 +128,7 @@ def main():
         "--model", "-m", default="base",
         help="Modèle Whisper: tiny, base, small, medium, large (défaut: base)"
     )
+    parser.add_argument("--word_timestamps", "-w", default="False", help="Sous-titres mot par mot: True (default=False)")
     args = parser.parse_args()
 
     video = find_video(args.path)
