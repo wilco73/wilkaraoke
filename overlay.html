@@ -393,7 +393,7 @@ function renderOverlay(state) {
     const wordProgress = (t - currentLine.start) / (currentLine.end - currentLine.start);
     const highlightIdx = Math.floor(wordProgress * words.length);
 
-    const lineInWindow = windows.some(w => currentLine.start >= w[0] && currentLine.start < w[1]);
+    const lineInWindow = windows.some(w => currentLine.end > w[0] && currentLine.start < w[1]);
 
     const html = words.map((word, i) => {
       const key = `${lineIdx}-${i}`;

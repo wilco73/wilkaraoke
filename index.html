@@ -1090,12 +1090,12 @@ function renderCurrentSubtitle(t) {
     const wordProgress = (t - currentLine.start) / (currentLine.end - currentLine.start);
     const highlightIdx = Math.floor(wordProgress * words.length);
 
-    const lineInWindow = isTimeInCutoffWindow(currentLine.start);
-
     const html = words.map((word, i) => {
       const key = `${lineIdx}-${i}`;
       const isRevealed = revealedWords.has(key);
-      const isHidden = lineInWindow && !isRevealed;
+      // A word is hidden if it exists in hiddenWordIndices and hasn't been revealed
+      const isInHiddenList = hiddenWordIndices.some(h => h.lineIdx === lineIdx && h.wordIdx === i);
+      const isHidden = isInHiddenList && !isRevealed;
 
       if (isHidden) {
         return `<span class="word hidden-word" data-word="${escapeHtml(word)}">${escapeHtml(word)}</span>`;
@@ -1169,8 +1169,9 @@ function buildAllHiddenWords() {
   const windows = currentSong.cutoff_windows || [];
 
   currentSong.lyrics.forEach((line, lineIdx) => {
-    // Check which window this line belongs to
-    const winIdx = windows.findIndex(w => line.start >= w[0] && line.start < w[1]);
+    // Check if this line overlaps with ANY cutoff window
+    // A line overlaps if it's not entirely before or entirely after the window
+    const winIdx = windows.findIndex(w => line.end > w[0] && line.start < w[1]);
     if (winIdx !== -1) {
       const words = line.text.split(/\s+/);
       words.forEach((word, wordIdx) => {
@@ -1178,6 +1179,10 @@ function buildAllHiddenWords() {
       });
     }
   });
+
+  console.log(`[buildAllHiddenWords] ${hiddenWordIndices.length} mots cachés sur ${windows.length} fenêtre(s)`,
+    windows.map((w, i) => `F${i+1}: ${hiddenWordIndices.filter(h => h.windowIdx === i).length} mots`).join(', ')
+  );
 }
 
 function isTimeInCutoffWindow(t) {
