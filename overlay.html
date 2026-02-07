@@ -297,6 +297,7 @@ let currentState = null;
 let currentSongId = null;
 let songData = null; // full song data with lyrics
 let lastRevealedCount = 0;
+let lastOverlayHtml = '';
 
 // ============================================================
 // POLLING
@@ -384,13 +385,15 @@ function renderOverlay(state) {
   document.getElementById('progressFill').style.width = `${pct}%`;
 
   // Subtitles
-  const currentLine = lyrics.find(l => t >= l.start && t < l.end);
+  const offset = state.subtitle_offset || 0;
+  const adjustedT = t + offset;
+  const currentLine = lyrics.find(l => adjustedT >= l.start && adjustedT < l.end);
   const subtitleEl = document.getElementById('subtitleText');
 
   if (currentLine) {
     const words = currentLine.text.split(/\s+/);
     const lineIdx = lyrics.indexOf(currentLine);
-    const wordProgress = (t - currentLine.start) / (currentLine.end - currentLine.start);
+    const wordProgress = (adjustedT - currentLine.start) / (currentLine.end - currentLine.start);
     const highlightIdx = Math.floor(wordProgress * words.length);
 
     const lineInWindow = windows.some(w => currentLine.end > w[0] && currentLine.start < w[1]);
@@ -410,14 +413,22 @@ function renderOverlay(state) {
       }
     }).join(' ');
 
-    subtitleEl.innerHTML = html;
+    // Only update if changed (prevent flickering)
+    if (html !== lastOverlayHtml) {
+      subtitleEl.innerHTML = html;
+      lastOverlayHtml = html;
+    }
   } else {
+    let placeholder = '';
     if (state.is_muted) {
-      subtitleEl.innerHTML = '<span class="word" style="color:var(--danger);font-size:1.3rem;">🔇 À vous de chanter !</span>';
+      placeholder = '<span class="word" style="color:var(--danger);font-size:1.3rem;">🔇 À vous de chanter !</span>';
     } else if (state.is_playing) {
-      subtitleEl.innerHTML = '<span class="word" style="color:var(--text-dim);">♪ ♪ ♪</span>';
-    } else {
-      subtitleEl.innerHTML = '';
+      placeholder = '<span class="word" style="color:var(--text-dim);">♪ ♪ ♪</span>';
+    }
+    if (placeholder !== lastOverlayHtml) {
+      subtitleEl.innerHTML = placeholder;
+      lastOverlayHtml = placeholder;
+    }
     }
   }
 }

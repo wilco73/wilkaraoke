@@ -157,6 +157,11 @@
     animation: revealPop 0.4s ease;
   }
 
+  .word.revealed-static {
+    background: rgba(0, 184, 148, 0.25);
+    color: var(--success);
+  }
+
   @keyframes revealPop {
     0% { transform: scale(1.4); }
     50% { transform: scale(0.9); }
@@ -796,9 +801,12 @@
       <kbd>whisper video.mp4 --language fr --output_format srt</kbd>
     </p>
     <p>
-      Le bouton <kbd>🎲 Au hasard</kbd> choisit une chanson aléatoire. 
-      Le son se coupe automatiquement au point défini dans <kbd>config.json</kbd>
-      (ou à 50% par défaut). Vous pouvez aussi couper manuellement avec <kbd>✂ Couper</kbd>.
+      <strong>Calage des paroles :</strong> si les sous-titres sont décalés par rapport à la voix,
+      ajoutez <kbd>"subtitle_offset"</kbd> dans config.json. Valeur en secondes :
+      <kbd>-0.3</kbd> = avance de 300ms, <kbd>0.5</kbd> = retarde de 500ms.
+    </p>
+    <p>
+      Les fenêtres de coupure acceptent les décimales : <kbd>[65.5, 95.2]</kbd>.
     </p>
   </div>
 </div>
@@ -817,6 +825,8 @@ let hiddenWordIndices = [];
 let subtitleInterval = null;
 let currentWindowIdx = -1; // which cutoff window we're in (-1 = none)
 let savedVolume = 0.8;     // remember volume before game mute
+let lastSubtitleHtml = '';  // track last rendered HTML to avoid flickering
+let lastLineIdx = -1;       // track current line to detect changes
 
 const video = document.getElementById('videoPlayer');
 video.volume = 0.8;
@@ -1080,40 +1090,55 @@ function updateSubtitles() {
   renderCurrentSubtitle(t);
 }
 
-function renderCurrentSubtitle(t) {
-  const currentLine = currentSong.lyrics.find(l => t >= l.start && t < l.end);
+function renderCurrentSubtitle(t, force) {
+  // Apply subtitle offset from config
+  const offset = (currentSong && currentSong.subtitle_offset) ? currentSong.subtitle_offset : 0;
+  const adjustedT = t + offset;
+
+  const currentLine = currentSong.lyrics.find(l => adjustedT >= l.start && adjustedT < l.end);
   const subtitleEl = document.getElementById('subtitleText');
 
   if (currentLine) {
     const words = currentLine.text.split(/\s+/);
     const lineIdx = currentSong.lyrics.indexOf(currentLine);
-    const wordProgress = (t - currentLine.start) / (currentLine.end - currentLine.start);
+    const wordProgress = (adjustedT - currentLine.start) / (currentLine.end - currentLine.start);
     const highlightIdx = Math.floor(wordProgress * words.length);
 
+    // Build new HTML
     const html = words.map((word, i) => {
       const key = `${lineIdx}-${i}`;
       const isRevealed = revealedWords.has(key);
-      // A word is hidden if it exists in hiddenWordIndices and hasn't been revealed
       const isInHiddenList = hiddenWordIndices.some(h => h.lineIdx === lineIdx && h.wordIdx === i);
       const isHidden = isInHiddenList && !isRevealed;
 
       if (isHidden) {
-        return `<span class="word hidden-word" data-word="${escapeHtml(word)}">${escapeHtml(word)}</span>`;
+        return `<span class="word hidden-word">${escapeHtml(word)}</span>`;
       } else if (isRevealed) {
-        return `<span class="word revealed">${escapeHtml(word)}</span>`;
+        return `<span class="word revealed-static">${escapeHtml(word)}</span>`;
       } else {
         const cls = (!isMuted && i === highlightIdx) ? 'highlighted' : '';
         return `<span class="word ${cls}">${escapeHtml(word)}</span>`;
       }
     }).join(' ');
 
-    subtitleEl.innerHTML = html;
-  } else {
-    if (!isMuted) {
-      subtitleEl.innerHTML = '<span class="word" style="color:var(--text-dim)">♪ ♪ ♪</span>';
-    } else {
-      subtitleEl.innerHTML = '<span class="word" style="color:var(--danger)">🔇 À vous de chanter !</span>';
+    // Only update DOM if content actually changed (prevents flickering)
+    if (html !== lastSubtitleHtml || force) {
+      subtitleEl.innerHTML = html;
+      lastSubtitleHtml = html;
     }
+    lastLineIdx = lineIdx;
+  } else {
+    let placeholder;
+    if (!isMuted) {
+      placeholder = '<span class="word" style="color:var(--text-dim)">♪ ♪ ♪</span>';
+    } else {
+      placeholder = '<span class="word" style="color:var(--danger)">🔇 À vous de chanter !</span>';
+    }
+    if (placeholder !== lastSubtitleHtml) {
+      subtitleEl.innerHTML = placeholder;
+      lastSubtitleHtml = placeholder;
+    }
+    lastLineIdx = -1;
   }
 }
 
@@ -1247,8 +1272,9 @@ function checkGuess() {
 
     setTimeout(() => { input.style.borderColor = '#333'; }, 600);
 
-    // Refresh subtitle display
-    renderCurrentSubtitle(getCurrentTime());
+    // Refresh subtitle display (force to show animation)
+    lastSubtitleHtml = ''; // force DOM update
+    renderCurrentSubtitle(getCurrentTime(), true);
     checkWin();
   } else {
     input.style.borderColor = 'var(--danger)';
@@ -1301,7 +1327,6 @@ function levenshtein(a, b) {
 }
 
 function revealNext() {
-  // Reveal next word in current window first, then others
   const winIdx = currentWindowIdx >= 0 ? currentWindowIdx : 0;
 
   // Try current window first
@@ -1310,7 +1335,8 @@ function revealNext() {
     const key = `${item.lineIdx}-${item.wordIdx}`;
     if (!revealedWords.has(key)) {
       revealedWords.add(key);
-      renderCurrentSubtitle(getCurrentTime());
+      lastSubtitleHtml = '';
+      renderCurrentSubtitle(getCurrentTime(), true);
       updateWindowProgress();
       return;
     }
@@ -1320,7 +1346,8 @@ function revealNext() {
     const key = `${item.lineIdx}-${item.wordIdx}`;
     if (!revealedWords.has(key)) {
       revealedWords.add(key);
-      renderCurrentSubtitle(getCurrentTime());
+      lastSubtitleHtml = '';
+      renderCurrentSubtitle(getCurrentTime(), true);
       updateWindowProgress();
       return;
     }
@@ -1412,6 +1439,8 @@ function resetGame() {
   score = 0;
   revealedWords = new Set();
   hiddenWordIndices = [];
+  lastSubtitleHtml = '';
+  lastLineIdx = -1;
 
   video.volume = savedVolume;
   video.currentTime = 0;
@@ -1543,6 +1572,7 @@ function pushState() {
     lyrics: currentSong.lyrics || [],
     video_url: currentSong.video_url || null,
     duration: currentSong.duration || 0,
+    subtitle_offset: currentSong.subtitle_offset || 0,
   };
 
   fetch(`${API}/api/state`, {
