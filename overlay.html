@@ -257,7 +257,7 @@
 
   <!-- Video -->
   <div class="video-area">
-    <video id="overlayVideo" playsinline crossorigin="anonymous"></video>
+    <video id="overlayVideo" playsinline crossorigin="anonymous" muted autoplay></video>
   </div>
 
   <!-- Top bar -->
@@ -332,12 +332,19 @@ async function pollState() {
 function loadVideo(state) {
   if (state.video_url && video.src !== state.video_url) {
     video.src = state.video_url;
+    video.muted = true; // required for autoplay in OBS Browser Source
     video.load();
+    // Force play after metadata loads (OBS needs this)
+    video.addEventListener('loadeddata', () => {
+      if (state.is_playing) video.play().catch(() => {});
+    }, { once: true });
   }
-  video.volume = 0; // Overlay is silent — sound comes from the streamer's app
 }
 
 function syncVideo(state) {
+  // Ensure muted (OBS requirement for autoplay)
+  video.muted = true;
+
   // Sync play/pause
   if (state.is_playing && video.paused) {
     video.play().catch(() => {});
