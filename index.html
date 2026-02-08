@@ -1238,48 +1238,55 @@ function renderCurrentSubtitle(t, force) {
   const offset = (currentSong && currentSong.subtitle_offset) ? currentSong.subtitle_offset : 0;
   const adjustedT = t + offset;
 
-  const currentLine = currentSong.lyrics.find(l => adjustedT >= l.start && adjustedT < l.end);
+  const lyrics = currentSong._processedLyrics || currentSong.lyrics;
+  const currentLine = lyrics.find(l => adjustedT >= l.start && adjustedT < l.end);
   const subtitleEl = document.getElementById('subtitleText');
 
   if (currentLine) {
-    const words = currentLine.text.split(/\s+/);
-    const lineIdx = currentSong.lyrics.indexOf(currentLine);
+    const lineIdx = lyrics.indexOf(currentLine);
+    const tokens = currentLine.tokens || currentLine.text.split(/\s+/).map((t, i) => ({ text: t, origWordIdx: i, isHyphen: false }));
     const wordProgress = (adjustedT - currentLine.start) / (currentLine.end - currentLine.start);
-    const highlightIdx = Math.floor(wordProgress * words.length);
+    const highlightIdx = Math.floor(wordProgress * tokens.length);
+
+    // Determine which window this line belongs to (for display scoping)
+    const windows = currentSong.cutoff_windows || [];
+    const lineWinIdx = windows.findIndex(w => currentLine.end > w[0] && currentLine.start < w[1]);
 
     // Build new HTML
     let inParens = false;
-    const html = words.map((word, i) => {
-      // Track parentheses
-      if (word.includes('(')) inParens = true;
+    const html = tokens.map((token, ti) => {
+      if (token.text.includes('(')) inParens = true;
       const isParenWord = inParens;
-      if (word.includes(')')) inParens = false;
+      if (token.text.includes(')')) inParens = false;
 
-      const key = `${lineIdx}-${i}`;
+      const key = `${lineIdx}-${ti}`;
       const isRevealed = revealedWords.has(key);
-      const isInHiddenList = hiddenWordIndices.some(h => h.lineIdx === lineIdx && h.wordIdx === i);
-      const isPunctOnly = normalizeWord(word).length === 0;
-      const isHidden = isInHiddenList && !isRevealed && !isPunctOnly;
+      const isInHiddenList = hiddenWordIndices.some(h => h.lineIdx === lineIdx && h.tokenIdx === ti);
+      const isPunctOnly = normalizeWord(token.text).length === 0;
 
-      if (isHidden) {
-        // Extract leading/trailing punctuation to show in clear
-        const match = word.match(/^([^a-zA-ZÀ-ÿ0-9]*)(.*?)([^a-zA-ZÀ-ÿ0-9]*)$/);
+      // Only hide if this word belongs to the current or a future window
+      // Words already found in previous windows stay revealed
+      const isHidden = isInHiddenList && !isRevealed && !isPunctOnly && !isParenWord;
+
+      if (token.isHyphen) {
+        // Always show hyphens
+        return `<span class="word" style="margin:0 -2px;">-</span>`;
+      } else if (isHidden) {
+        const match = token.text.match(/^([^a-zA-ZÀ-ÿ0-9]*)(.*?)([^a-zA-ZÀ-ÿ0-9]*)$/);
         const prefix = match ? match[1] : '';
-        const core = match ? match[2] : word;
+        const core = match ? match[2] : token.text;
         const suffix = match ? match[3] : '';
         return `${escapeHtml(prefix)}<span class="word hidden-word">${escapeHtml(core)}</span>${escapeHtml(suffix)}`;
       } else if (isRevealed) {
-        return `<span class="word revealed-static">${escapeHtml(word)}</span>`;
+        return `<span class="word revealed-static">${escapeHtml(token.text)}</span>`;
       } else if (isParenWord) {
-        // Backing vocals — show in dimmed style
-        return `<span class="word backing-vocal">${escapeHtml(word)}</span>`;
+        return `<span class="word backing-vocal">${escapeHtml(token.text)}</span>`;
       } else {
-        const cls = (!isMuted && i === highlightIdx) ? 'highlighted' : '';
-        return `<span class="word ${cls}">${escapeHtml(word)}</span>`;
+        const cls = (!isMuted && ti === highlightIdx) ? 'highlighted' : '';
+        return `<span class="word ${cls}">${escapeHtml(token.text)}</span>`;
       }
     }).join(' ');
 
-    // Only update DOM if content actually changed (prevents flickering)
     if (html !== lastSubtitleHtml || force) {
       subtitleEl.innerHTML = html;
       lastSubtitleHtml = html;
@@ -1351,24 +1358,41 @@ function buildAllHiddenWords() {
   hiddenWordIndices = [];
   const windows = currentSong.cutoff_windows || [];
 
-  currentSong.lyrics.forEach((line, lineIdx) => {
-    // Check if this line overlaps with ANY cutoff window
+  // Pre-process lyrics: split hyphenated words into sub-tokens
+  // We store a mapping so we know which sub-tokens belong to which original word
+  if (!currentSong._processedLyrics) {
+    currentSong._processedLyrics = currentSong.lyrics.map(line => {
+      const origWords = line.text.split(/\s+/);
+      const tokens = []; // { text, origWordIdx, isHyphen }
+      origWords.forEach((word, wi) => {
+        // Split on hyphens: "peut-être" → ["peut", "-", "être"]
+        const parts = word.split(/(-)/);
+        parts.forEach(part => {
+          if (part.length > 0) {
+            tokens.push({ text: part, origWordIdx: wi, isHyphen: part === '-' });
+          }
+        });
+      });
+      return { ...line, tokens };
+    });
+  }
+
+  currentSong._processedLyrics.forEach((line, lineIdx) => {
     const winIdx = windows.findIndex(w => line.end > w[0] && line.start < w[1]);
     if (winIdx !== -1) {
-      const words = line.text.split(/\s+/);
       let inParentheses = false;
 
-      words.forEach((word, wordIdx) => {
-        // Track parentheses state
-        if (word.includes('(')) inParentheses = true;
+      line.tokens.forEach((token, tokenIdx) => {
+        if (token.text.includes('(')) inParentheses = true;
 
-        // Skip punctuation-only tokens and words inside parentheses (backing vocals)
-        const cleaned = normalizeWord(word);
-        if (cleaned.length > 0 && !inParentheses) {
-          hiddenWordIndices.push({ lineIdx, wordIdx, word, windowIdx: winIdx });
+        const cleaned = normalizeWord(token.text);
+        if (cleaned.length > 0 && !inParentheses && !token.isHyphen) {
+          hiddenWordIndices.push({
+            lineIdx, tokenIdx, word: token.text, windowIdx: winIdx
+          });
         }
 
-        if (word.includes(')')) inParentheses = false;
+        if (token.text.includes(')')) inParentheses = false;
       });
     }
   });
@@ -1396,24 +1420,28 @@ function checkGuess() {
   const guessWords = rawGuess.split(/\s+/).map(w => normalizeWord(w)).filter(w => w.length > 0);
   if (guessWords.length === 0) return;
 
+  const winIdx = currentWindowIdx >= 0 ? currentWindowIdx : 0;
   let totalFound = 0;
   let foundDisplayWords = [];
 
-  // For each guess word, try to match hidden words
+  // For each guess word, only match hidden words in the CURRENT window
   for (const guessWord of guessWords) {
-    // Find all unrevealed hidden words that match this guess
     for (const item of hiddenWordIndices) {
-      const key = `${item.lineIdx}-${item.wordIdx}`;
+      // Only match in current window
+      if (item.windowIdx !== winIdx) continue;
+
+      const key = `${item.lineIdx}-${item.tokenIdx}`;
       if (revealedWords.has(key)) continue;
 
       const hiddenClean = normalizeWord(item.word);
       if (hiddenClean.length === 0) continue;
 
       if (wordsMatch(guessWord, hiddenClean)) {
-        // Reveal ALL instances of this word across all windows
+        // Reveal ALL instances of this word in the CURRENT window only
         const matchNorm = hiddenClean;
         for (const other of hiddenWordIndices) {
-          const otherKey = `${other.lineIdx}-${other.wordIdx}`;
+          if (other.windowIdx !== winIdx) continue;
+          const otherKey = `${other.lineIdx}-${other.tokenIdx}`;
           if (revealedWords.has(otherKey)) continue;
           if (normalizeWord(other.word) === matchNorm) {
             revealedWords.add(otherKey);
@@ -1500,7 +1528,7 @@ function revealNext() {
   // Try current window first
   for (const item of hiddenWordIndices) {
     if (item.windowIdx !== winIdx) continue;
-    const key = `${item.lineIdx}-${item.wordIdx}`;
+    const key = `${item.lineIdx}-${item.tokenIdx}`;
     if (!revealedWords.has(key)) {
       revealedWords.add(key);
       lastSubtitleHtml = '';
@@ -1511,7 +1539,7 @@ function revealNext() {
   }
   // Then any other window
   for (const item of hiddenWordIndices) {
-    const key = `${item.lineIdx}-${item.wordIdx}`;
+    const key = `${item.lineIdx}-${item.tokenIdx}`;
     if (!revealedWords.has(key)) {
       revealedWords.add(key);
       lastSubtitleHtml = '';
@@ -1525,17 +1553,27 @@ function revealNext() {
 function checkWin() {
   updateWindowProgress();
 
-  // Count unrevealed words across ALL windows
+  // Count unrevealed words in current window only
+  const winIdx = currentWindowIdx >= 0 ? currentWindowIdx : 0;
   let remaining = 0;
   for (const item of hiddenWordIndices) {
-    const key = `${item.lineIdx}-${item.wordIdx}`;
+    if (item.windowIdx !== winIdx) continue;
+    const key = `${item.lineIdx}-${item.tokenIdx}`;
     if (!revealedWords.has(key)) remaining++;
   }
 
   if (remaining === 0) {
-    document.getElementById('guessFeedback').innerHTML =
-      `<span style="color:var(--accent)">🏆 Toutes les paroles trouvées ! Bravo !</span>`;
-    document.getElementById('wpComplete').textContent = '🏆 Tout trouvé ! Bravo !';
+    // Check if ALL windows are complete
+    let totalRemaining = 0;
+    for (const item of hiddenWordIndices) {
+      const key = `${item.lineIdx}-${item.tokenIdx}`;
+      if (!revealedWords.has(key)) totalRemaining++;
+    }
+    if (totalRemaining === 0) {
+      document.getElementById('guessFeedback').innerHTML =
+        `<span style="color:var(--accent)">🏆 Toutes les paroles trouvées ! Bravo !</span>`;
+      document.getElementById('wpComplete').textContent = '🏆 Tout trouvé ! Bravo !';
+    }
   }
 }
 
@@ -1548,14 +1586,14 @@ function updateWindowProgress() {
   const windowWords = hiddenWordIndices.filter(h => h.windowIdx === winIdx);
   const totalInWindow = windowWords.length;
   const foundInWindow = windowWords.filter(h => {
-    const key = `${h.lineIdx}-${h.wordIdx}`;
+    const key = `${h.lineIdx}-${h.tokenIdx}`;
     return revealedWords.has(key);
   }).length;
 
   // Count total remaining across all windows
   let totalRemaining = 0;
   for (const item of hiddenWordIndices) {
-    const key = `${item.lineIdx}-${item.wordIdx}`;
+    const key = `${item.lineIdx}-${item.tokenIdx}`;
     if (!revealedWords.has(key)) totalRemaining++;
   }
 
@@ -1609,6 +1647,7 @@ function resetGame() {
   hiddenWordIndices = [];
   lastSubtitleHtml = '';
   lastLineIdx = -1;
+  if (currentSong) currentSong._processedLyrics = null;
 
   video.volume = savedVolume;
   video.currentTime = 0;
