@@ -299,15 +299,27 @@ let songData = null; // full song data with lyrics
 let lastRevealedCount = 0;
 let lastOverlayHtml = '';
 
+// Get room from URL parameter
+const urlParams = new URLSearchParams(window.location.search);
+const ROOM_ID = urlParams.get('room') || '';
+
 // ============================================================
 // POLLING
 // ============================================================
 async function pollState() {
+  if (!ROOM_ID) {
+    document.querySelector('.waiting-screen .hint').textContent =
+      '⚠️ Paramètre room manquant. URL: /overlay?room=VOTRE_ROOM';
+    return;
+  }
+
   try {
-    const res = await fetch(`${API}/api/state`);
+    const res = await fetch(`${API}/api/state?room=${encodeURIComponent(ROOM_ID)}`);
     const state = await res.json();
 
     if (!state.song_id) {
+      document.querySelector('.waiting-screen .hint').textContent =
+        `Room « ${ROOM_ID} » — En attente d'une chanson...`;
       showWaiting(true);
       return;
     }
@@ -315,7 +327,7 @@ async function pollState() {
     // Song changed?
     if (state.song_id !== currentSongId) {
       currentSongId = state.song_id;
-      songData = state; // state contains lyrics, cutoff_windows etc.
+      songData = state;
       loadVideo(state);
       showWaiting(false);
       showSongBanner(state.song_title, state.song_artist);

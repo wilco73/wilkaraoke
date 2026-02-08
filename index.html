@@ -514,6 +514,115 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ---- Room Selection Screen ---- */
+  .room-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-dark);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .room-screen.hidden { display: none; }
+
+  .room-box {
+    background: var(--bg-card);
+    border: 1px solid #222244;
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 460px;
+    width: 90%;
+    text-align: center;
+  }
+
+  .room-box h1 {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 1.6rem;
+    background: linear-gradient(135deg, var(--accent), var(--pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .room-box .subtitle { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 28px; }
+
+  .room-input-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .room-input {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 2px solid #333;
+    background: #1a1a2e;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 1px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .room-input:focus { border-color: var(--accent); }
+  .room-input::placeholder { color: var(--text-dim); font-weight: 400; letter-spacing: 0; }
+
+  .room-btn {
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .room-btn.primary {
+    background: linear-gradient(135deg, var(--accent), #e6a020);
+    color: #000;
+  }
+  .room-btn.primary:hover { transform: scale(1.05); }
+  .room-btn.secondary {
+    background: #2a2a4a;
+    color: var(--text);
+    width: 100%;
+    margin-top: 8px;
+  }
+  .room-btn.secondary:hover { background: #3a3a5a; }
+
+  .room-or {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin: 16px 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .room-error {
+    color: var(--danger);
+    font-size: 0.8rem;
+    margin-top: 8px;
+    min-height: 20px;
+  }
+
+  .room-badge {
+    display: inline-block;
+    background: #2a2a4a;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin: 8px 0;
+    cursor: pointer;
+  }
+  .room-badge:hover { background: #3a3a5a; }
+
   /* ---- Responsive ---- */
   @media (max-width: 600px) {
     .header h1 { font-size: 1.3rem; }
@@ -667,6 +776,28 @@
 </head>
 <body>
 
+<!-- Room Selection -->
+<div class="room-screen" id="roomScreen">
+  <div class="room-box">
+    <h1>🎤 N'oubliez pas les Paroles</h1>
+    <p class="subtitle">Créez ou rejoignez une room pour commencer</p>
+
+    <div class="room-input-group">
+      <input type="text" class="room-input" id="roomInput"
+             placeholder="Nom de room (ex: wilfried)"
+             maxlength="20"
+             onkeydown="if(event.key==='Enter') joinRoom()"
+             oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '')">
+      <button class="room-btn primary" onclick="joinRoom()">Rejoindre</button>
+    </div>
+    <div class="room-error" id="roomError"></div>
+
+    <div class="room-or">— ou —</div>
+
+    <button class="room-btn secondary" onclick="createRandomRoom()">🎲 Créer une room aléatoire</button>
+  </div>
+</div>
+
 <!-- Loading -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
@@ -677,6 +808,10 @@
   <div class="header">
     <h1>🎤 N'oubliez pas les Paroles</h1>
     <p>Karaoké interactif avec coupure de son</p>
+    <div class="room-badge" id="roomBadge" onclick="copyOverlayUrl()" title="Cliquer pour copier l'URL overlay">
+      Room : <span id="roomDisplay">—</span>
+    </div>
+    <span id="copyMsg" style="color:var(--success);font-size:0.75rem;opacity:0;transition:opacity 0.3s;">✓ URL overlay copiée !</span>
   </div>
 
   <!-- Video Stage -->
@@ -775,17 +910,18 @@
     <h3>📡 Mode Stream (OBS)</h3>
     <p>
       Cette page est la <strong>régie</strong> — vous contrôlez tout depuis ici.
-      Pour afficher dans OBS, ajoutez une <strong>Source Navigateur</strong> avec l'URL :
+      Pour afficher dans OBS, ajoutez une <strong>Source Navigateur</strong> avec l'URL overlay
+      (cliquez sur le badge room ci-dessus pour copier).
     </p>
     <p>
       <kbd id="overlayUrl" style="cursor:pointer;display:inline-block;padding:6px 12px;font-size:0.85rem;" onclick="copyOverlayUrl()" title="Cliquer pour copier">
         chargement...
       </kbd>
-      <span id="copyMsg" style="color:var(--success);font-size:0.8rem;margin-left:8px;opacity:0;transition:opacity 0.3s;">✓ Copié !</span>
     </p>
     <p>
       L'overlay est transparent, sans contrôles — juste la vidéo, les sous-titres et le score.
-      Taille recommandée : <kbd>1280×720</kbd>
+      Taille recommandée : <kbd>1280×720</kbd>.
+      Votre URL overlay est <strong>permanente</strong> tant que vous gardez le même nom de room.
     </p>
   </div>
 
@@ -816,6 +952,7 @@
 // STATE
 // ============================================================
 const API = '';
+let currentRoom = null;     // room ID
 let songs = [];
 let currentSong = null;
 let isMuted = false;       // game mute (cutoff active)
@@ -1566,7 +1703,7 @@ document.getElementById('progressContainer').addEventListener('click', (e) => {
 // STATE SYNC → push state to server for overlay
 // ============================================================
 function pushState() {
-  if (!currentSong) return;
+  if (!currentSong || !currentRoom) return;
   const stateData = {
     song_id: currentSong.id,
     song_title: currentSong.title,
@@ -1584,15 +1721,69 @@ function pushState() {
     subtitle_offset: currentSong.subtitle_offset || 0,
   };
 
-  fetch(`${API}/api/state`, {
+  fetch(`${API}/api/state?room=${encodeURIComponent(currentRoom)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(stateData),
-  }).catch(() => {}); // silent fail
+  }).catch(() => {});
 }
 
 // Push state every 200ms
 setInterval(pushState, 200);
+
+// ============================================================
+// ROOM MANAGEMENT
+// ============================================================
+function generateRoomCode() {
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  let code = 'room-';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function joinRoom() {
+  const input = document.getElementById('roomInput');
+  const error = document.getElementById('roomError');
+  const name = input.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+  if (!name || name.length < 2) {
+    error.textContent = 'Le nom doit faire au moins 2 caractères (lettres, chiffres, tirets)';
+    return;
+  }
+
+  enterRoom(name);
+}
+
+function createRandomRoom() {
+  enterRoom(generateRoomCode());
+}
+
+function enterRoom(roomId) {
+  currentRoom = roomId;
+
+  // Save to localStorage for persistence
+  try { localStorage.setItem('karaoke_room', roomId); } catch(e) {}
+
+  // Update UI
+  document.getElementById('roomScreen').classList.add('hidden');
+  document.getElementById('roomDisplay').textContent = roomId;
+
+  const overlayUrl = `${window.location.origin}/overlay?room=${encodeURIComponent(roomId)}`;
+  document.getElementById('overlayUrl').textContent = overlayUrl;
+
+  // Load library
+  init();
+}
+
+function copyOverlayUrl() {
+  if (!currentRoom) return;
+  const url = `${window.location.origin}/overlay?room=${encodeURIComponent(currentRoom)}`;
+  navigator.clipboard.writeText(url).then(() => {
+    const msg = document.getElementById('copyMsg');
+    msg.style.opacity = '1';
+    setTimeout(() => { msg.style.opacity = '0'; }, 2000);
+  }).catch(() => {});
+}
 
 // ============================================================
 // INIT
@@ -1604,20 +1795,30 @@ async function init() {
   showLoading(false);
 
   // Display overlay URL
-  const overlayUrl = `${window.location.origin}/overlay`;
-  document.getElementById('overlayUrl').textContent = overlayUrl;
+  if (currentRoom) {
+    const overlayUrl = `${window.location.origin}/overlay?room=${encodeURIComponent(currentRoom)}`;
+    document.getElementById('overlayUrl').textContent = overlayUrl;
+  }
 }
 
-function copyOverlayUrl() {
-  const url = `${window.location.origin}/overlay`;
-  navigator.clipboard.writeText(url).then(() => {
-    const msg = document.getElementById('copyMsg');
-    msg.style.opacity = '1';
-    setTimeout(() => { msg.style.opacity = '0'; }, 2000);
-  }).catch(() => {});
-}
+// Check for saved room or URL param
+(function startup() {
+  // Check URL param first (e.g. /?room=wilfried)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlRoom = urlParams.get('room');
 
-init();
+  // Then check localStorage
+  let savedRoom = null;
+  try { savedRoom = localStorage.getItem('karaoke_room'); } catch(e) {}
+
+  if (urlRoom) {
+    enterRoom(urlRoom);
+  } else if (savedRoom) {
+    // Pre-fill and auto-join saved room
+    enterRoom(savedRoom);
+  }
+  // Otherwise the room screen stays visible
+})();
 </script>
 </body>
 </html>

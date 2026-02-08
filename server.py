@@ -331,19 +331,63 @@ def scan_library():
 # HTTP SERVER
 # ============================================================
 # ============================================================
-# GAME STATE (shared between regie and overlay)
+# GAME STATE — room-based (shared between regie and overlay)
 # ============================================================
-game_state = {
-    "song_id": None,
-    "is_playing": False,
-    "is_muted": False,
-    "current_time": 0,
-    "score": 0,
-    "revealed_words": [],   # list of "lineIdx-wordIdx" keys
-    "window_idx": -1,
-    "timestamp": 0,         # server timestamp for sync
-}
-state_lock = threading.Lock()
+game_rooms = {}   # { room_id: { state: {...}, last_activity: timestamp } }
+rooms_lock = threading.Lock()
+
+ROOM_EXPIRY_SECONDS = 2 * 3600  # 2 hours
+
+
+def get_room_state(room_id):
+    """Get state for a room, or empty state if not found."""
+    with rooms_lock:
+        room = game_rooms.get(room_id)
+        if room:
+            return dict(room["state"])
+        return {"song_id": None, "room_id": room_id}
+
+
+def update_room_state(room_id, data):
+    """Update state for a room."""
+    with rooms_lock:
+        if room_id not in game_rooms:
+            game_rooms[room_id] = {"state": {}, "last_activity": time.time()}
+        game_rooms[room_id]["state"].update(data)
+        game_rooms[room_id]["state"]["room_id"] = room_id
+        game_rooms[room_id]["state"]["timestamp"] = time.time()
+        game_rooms[room_id]["last_activity"] = time.time()
+
+
+def check_room_exists(room_id):
+    """Check if a room exists and is active."""
+    with rooms_lock:
+        return room_id in game_rooms
+
+
+def cleanup_expired_rooms():
+    """Remove expired rooms."""
+    now = time.time()
+    with rooms_lock:
+        expired = [rid for rid, room in game_rooms.items()
+                   if now - room["last_activity"] > ROOM_EXPIRY_SECONDS]
+        for rid in expired:
+            del game_rooms[rid]
+            print(f"  🧹 Room expirée : {rid}")
+
+
+def list_active_rooms():
+    """List active rooms."""
+    with rooms_lock:
+        return [
+            {
+                "room_id": rid,
+                "song": room["state"].get("song_title", ""),
+                "artist": room["state"].get("song_artist", ""),
+                "active": time.time() - room["last_activity"] < 30,
+            }
+            for rid, room in game_rooms.items()
+        ]
 
 
 songs_cache = []
@@ -395,8 +439,29 @@ class GameHandler(http.server.BaseHTTPRequestHandler):
 
         # --- Game state (overlay reads this) ---
         if path == "/api/state":
-            with state_lock:
-                self.send_json(game_state)
+            params = urllib.parse.parse_qs(parsed.query)
+            room_id = params.get("room", [""])[0].strip()
+            if not room_id:
+                self.send_json({"error": "Missing room parameter"}, 400)
+            else:
+                self.send_json(get_room_state(room_id))
+            return
+
+        # --- List active rooms ---
+        if path == "/api/rooms":
+            cleanup_expired_rooms()
+            self.send_json({"rooms": list_active_rooms()})
+            return
+
+        # --- Check room availability ---
+        if path == "/api/room/check":
+            params = urllib.parse.parse_qs(parsed.query)
+            room_id = params.get("room", [""])[0].strip().lower()
+            if not room_id:
+                self.send_json({"error": "Missing room parameter"}, 400)
+            else:
+                exists = check_room_exists(room_id)
+                self.send_json({"room_id": room_id, "exists": exists})
             return
 
         # --- Serve local videos (local mode only) ---
@@ -416,6 +481,14 @@ class GameHandler(http.server.BaseHTTPRequestHandler):
 
         self.send_error(404)
 
+    def do_OPTIONS(self):
+        """Handle CORS preflight requests."""
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
@@ -423,14 +496,17 @@ class GameHandler(http.server.BaseHTTPRequestHandler):
         # --- Game state update (regie pushes this) ---
         if path == "/api/state":
             try:
+                params = urllib.parse.parse_qs(parsed.query)
+                room_id = params.get("room", [""])[0].strip()
+                if not room_id:
+                    self.send_json({"error": "Missing room parameter"}, 400)
+                    return
+
                 length = int(self.headers.get("Content-Length", 0))
                 body = self.rfile.read(length)
                 data = json.loads(body.decode("utf-8"))
 
-                with state_lock:
-                    game_state.update(data)
-                    game_state["timestamp"] = time.time()
-
+                update_room_state(room_id, data)
                 self.send_json({"ok": True})
             except Exception as e:
                 self.send_json({"error": str(e)}, 400)
