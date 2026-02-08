@@ -889,7 +889,6 @@
   <!-- Controls -->
   <div class="controls">
     <button class="btn btn-primary" id="btnPlay" onclick="togglePlay()" disabled>▶ Jouer</button>
-    <button class="btn btn-danger" id="btnCutoff" onclick="toggleCutoff()" disabled>✂ Couper le son</button>
     <button class="btn btn-success" id="btnReveal" onclick="revealNext()" disabled>👁 Révéler</button>
     <button class="btn btn-secondary" onclick="resetGame()">↺ Reset</button>
   </div>
@@ -1009,6 +1008,19 @@ let replayAfterComplete = false; // sound mode: replay sound after all words fou
 
 const video = document.getElementById('videoPlayer');
 video.volume = 0.8;
+
+// End of video → show final score
+video.addEventListener('ended', () => {
+  pause();
+  showFinalScore();
+});
+
+// Update total time when video metadata loads
+video.addEventListener('loadedmetadata', () => {
+  if (video.duration && !isNaN(video.duration)) {
+    document.getElementById('totalTime').textContent = formatTime(video.duration);
+  }
+});
 
 // ============================================================
 // API CALLS
@@ -1207,7 +1219,6 @@ function play() {
     video.play().catch(() => {});
   }
   document.getElementById('btnPlay').innerHTML = '⏸ Pause';
-  document.getElementById('btnCutoff').disabled = false;
   updateStatus(isMuted ? 'muted' : 'playing');
   startSubtitleLoop();
   updateRevealButton();
@@ -1240,8 +1251,8 @@ function updateSubtitles() {
   if (!currentSong || !currentSong.lyrics) return;
   const t = getCurrentTime();
 
-  // Update progress
-  const duration = currentSong.duration || video.duration || 1;
+  // Use actual video duration if available, fallback to SRT duration
+  const duration = (video.duration && !isNaN(video.duration)) ? video.duration : (currentSong.duration || 1);
   const pct = Math.min((t / duration) * 100, 100);
   document.getElementById('progressBar').style.width = `${pct}%`;
   document.getElementById('currentTime').textContent = formatTime(t);
@@ -1258,13 +1269,6 @@ function updateSubtitles() {
   } else if (inWindow === -1 && isMuted) {
     // Exiting a cutoff window → restore sound
     restoreSound();
-  }
-
-  // End detection
-  if (t >= duration - 0.2 && t > 0) {
-    pause();
-    showFinalScore();
-    return;
   }
 
   // Find current lyric line
@@ -1348,15 +1352,6 @@ function renderCurrentSubtitle(t, force) {
 // ============================================================
 // GAME MECHANICS
 // ============================================================
-function toggleCutoff() {
-  if (isMuted) {
-    // Un-mute (toggle back)
-    undoCutoff();
-  } else {
-    triggerCutoff();
-  }
-}
-
 function triggerCutoff() {
   if (isMuted) return;
   isMuted = true;
@@ -1372,9 +1367,6 @@ function triggerCutoff() {
   pause();
 
   updateStatus('muted');
-  document.getElementById('btnCutoff').innerHTML = '🔊 Remettre le son';
-  document.getElementById('btnCutoff').classList.remove('btn-danger');
-  document.getElementById('btnCutoff').classList.add('btn-warning');
   updateRevealButton();
   document.getElementById('guessArea').classList.add('active');
   document.getElementById('guessInput').focus();
@@ -1387,18 +1379,6 @@ function triggerCutoff() {
   renderCurrentSubtitle(getCurrentTime());
 }
 
-function undoCutoff() {
-  // Toggle back — restore sound and let playback continue
-  isMuted = false;
-  video.volume = savedVolume;
-
-  document.getElementById('btnCutoff').innerHTML = '✂ Couper le son';
-  document.getElementById('btnCutoff').classList.remove('btn-warning');
-  document.getElementById('btnCutoff').classList.add('btn-danger');
-  updateRevealButton();
-  updateStatus('playing');
-}
-
 function restoreSound() {
   if (!isMuted) return;
   isMuted = false;
@@ -1407,10 +1387,6 @@ function restoreSound() {
   // Restore volume
   video.volume = savedVolume;
 
-  document.getElementById('btnCutoff').innerHTML = '✂ Couper le son';
-  document.getElementById('btnCutoff').classList.remove('btn-warning');
-  document.getElementById('btnCutoff').classList.add('btn-danger');
-  document.getElementById('btnCutoff').disabled = false;
   updateRevealButton();
   updateStatus('playing');
 }
@@ -1759,10 +1735,6 @@ function resetGame() {
   document.getElementById('progressBar').style.width = '0%';
   document.getElementById('currentTime').textContent = '0:00';
   document.getElementById('btnPlay').innerHTML = '▶ Jouer';
-  document.getElementById('btnCutoff').disabled = true;
-  document.getElementById('btnCutoff').innerHTML = '✂ Couper le son';
-  document.getElementById('btnCutoff').classList.remove('btn-warning');
-  document.getElementById('btnCutoff').classList.add('btn-danger');
   document.getElementById('btnReveal').disabled = true;
   document.getElementById('guessArea').classList.remove('active');
   document.getElementById('guessFeedback').innerHTML = '';
@@ -1861,7 +1833,7 @@ document.getElementById('progressContainer').addEventListener('click', (e) => {
   if (!currentSong) return;
   const rect = e.currentTarget.getBoundingClientRect();
   const pct = (e.clientX - rect.left) / rect.width;
-  const duration = currentSong.duration || video.duration || 1;
+  const duration = (video.duration && !isNaN(video.duration)) ? video.duration : (currentSong.duration || 1);
   const newTime = pct * duration;
   if (video.src) video.currentTime = newTime;
 });
