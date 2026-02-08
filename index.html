@@ -162,6 +162,12 @@
     color: var(--success);
   }
 
+  .word.backing-vocal {
+    color: var(--text-dim);
+    opacity: 0.6;
+    font-style: italic;
+  }
+
   @keyframes revealPop {
     0% { transform: scale(1.4); }
     50% { transform: scale(0.9); }
@@ -784,7 +790,7 @@
 
     <div class="room-input-group">
       <input type="text" class="room-input" id="roomInput"
-             placeholder="Nom de room (ex: tonpseudo)"
+             placeholder="Nom de room (ex: wilfried)"
              maxlength="20"
              onkeydown="if(event.key==='Enter') joinRoom()"
              oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '')">
@@ -1242,7 +1248,13 @@ function renderCurrentSubtitle(t, force) {
     const highlightIdx = Math.floor(wordProgress * words.length);
 
     // Build new HTML
+    let inParens = false;
     const html = words.map((word, i) => {
+      // Track parentheses
+      if (word.includes('(')) inParens = true;
+      const isParenWord = inParens;
+      if (word.includes(')')) inParens = false;
+
       const key = `${lineIdx}-${i}`;
       const isRevealed = revealedWords.has(key);
       const isInHiddenList = hiddenWordIndices.some(h => h.lineIdx === lineIdx && h.wordIdx === i);
@@ -1258,6 +1270,9 @@ function renderCurrentSubtitle(t, force) {
         return `${escapeHtml(prefix)}<span class="word hidden-word">${escapeHtml(core)}</span>${escapeHtml(suffix)}`;
       } else if (isRevealed) {
         return `<span class="word revealed-static">${escapeHtml(word)}</span>`;
+      } else if (isParenWord) {
+        // Backing vocals — show in dimmed style
+        return `<span class="word backing-vocal">${escapeHtml(word)}</span>`;
       } else {
         const cls = (!isMuted && i === highlightIdx) ? 'highlighted' : '';
         return `<span class="word ${cls}">${escapeHtml(word)}</span>`;
@@ -1341,12 +1356,19 @@ function buildAllHiddenWords() {
     const winIdx = windows.findIndex(w => line.end > w[0] && line.start < w[1]);
     if (winIdx !== -1) {
       const words = line.text.split(/\s+/);
+      let inParentheses = false;
+
       words.forEach((word, wordIdx) => {
-        // Skip punctuation-only tokens (!, ..., ?, etc.)
+        // Track parentheses state
+        if (word.includes('(')) inParentheses = true;
+
+        // Skip punctuation-only tokens and words inside parentheses (backing vocals)
         const cleaned = normalizeWord(word);
-        if (cleaned.length > 0) {
+        if (cleaned.length > 0 && !inParentheses) {
           hiddenWordIndices.push({ lineIdx, wordIdx, word, windowIdx: winIdx });
         }
+
+        if (word.includes(')')) inParentheses = false;
       });
     }
   });
@@ -1803,7 +1825,7 @@ async function init() {
 
 // Check for saved room or URL param
 (function startup() {
-  // Check URL param first (e.g. /?room=tonpseudo)
+  // Check URL param first (e.g. /?room=wilfried)
   const urlParams = new URLSearchParams(window.location.search);
   const urlRoom = urlParams.get('room');
 
