@@ -784,7 +784,7 @@
 
     <div class="room-input-group">
       <input type="text" class="room-input" id="roomInput"
-             placeholder="Nom de room (ex: wilfried)"
+             placeholder="Nom de room (ex: tonpseudo)"
              maxlength="20"
              onkeydown="if(event.key==='Enter') joinRoom()"
              oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '')">
@@ -1803,7 +1803,7 @@ async function init() {
 
 // Check for saved room or URL param
 (function startup() {
-  // Check URL param first (e.g. /?room=wilfried)
+  // Check URL param first (e.g. /?room=tonpseudo)
   const urlParams = new URLSearchParams(window.location.search);
   const urlRoom = urlParams.get('room');
 
