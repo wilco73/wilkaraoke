@@ -1015,10 +1015,11 @@ video.addEventListener('ended', () => {
   showFinalScore();
 });
 
-// Update total time when video metadata loads
+// Update total time and re-render markers when video metadata loads
 video.addEventListener('loadedmetadata', () => {
   if (video.duration && !isNaN(video.duration)) {
     document.getElementById('totalTime').textContent = formatTime(video.duration);
+    if (currentSong) renderCutoffMarkers();
   }
 });
 
@@ -1252,7 +1253,7 @@ function updateSubtitles() {
   const t = getCurrentTime();
 
   // Use actual video duration if available, fallback to SRT duration
-  const duration = (video.duration && !isNaN(video.duration)) ? video.duration : (currentSong.duration || 1);
+  const duration = getEffectiveDuration();
   const pct = Math.min((t / duration) * 100, 100);
   document.getElementById('progressBar').style.width = `${pct}%`;
   document.getElementById('currentTime').textContent = formatTime(t);
@@ -1607,7 +1608,7 @@ function revealNext() {
       revealedWords.add(key);
       lastSubtitleHtml = '';
       renderCurrentSubtitle(getCurrentTime(), true);
-      updateWindowProgress();
+      checkWin();
       return;
     }
   }
@@ -1618,7 +1619,7 @@ function revealNext() {
       revealedWords.add(key);
       lastSubtitleHtml = '';
       renderCurrentSubtitle(getCurrentTime(), true);
-      updateWindowProgress();
+      checkWin();
       return;
     }
   }
@@ -1738,12 +1739,12 @@ function resetGame() {
   document.getElementById('btnReveal').disabled = true;
   document.getElementById('guessArea').classList.remove('active');
   document.getElementById('guessFeedback').innerHTML = '';
-  document.getElementById('cutoffMarkers').innerHTML = '';
   document.getElementById('windowProgress').classList.remove('active');
   document.getElementById('wpComplete').classList.remove('show');
   updateStatus('paused');
 
   if (currentSong) {
+    renderCutoffMarkers();
     document.getElementById('subtitleText').innerHTML =
       `<span class="word" style="color: var(--accent);">♪ ${currentSong.title} — ${currentSong.artist} ♪</span>`;
   }
@@ -1810,11 +1811,15 @@ function updateVolIcon(vol) {
 // ============================================================
 // CUTOFF WINDOW MARKERS
 // ============================================================
+function getEffectiveDuration() {
+  return (video.duration && !isNaN(video.duration)) ? video.duration : (currentSong ? currentSong.duration : 1) || 1;
+}
+
 function renderCutoffMarkers() {
   const container = document.getElementById('cutoffMarkers');
   const infoEl = document.getElementById('cutoffInfo');
   const windows = currentSong.cutoff_windows || [];
-  const duration = currentSong.duration || 1;
+  const duration = getEffectiveDuration();
 
   // Render markers on progress bar
   container.innerHTML = windows.map(w => {
@@ -1833,7 +1838,7 @@ document.getElementById('progressContainer').addEventListener('click', (e) => {
   if (!currentSong) return;
   const rect = e.currentTarget.getBoundingClientRect();
   const pct = (e.clientX - rect.left) / rect.width;
-  const duration = (video.duration && !isNaN(video.duration)) ? video.duration : (currentSong.duration || 1);
+  const duration = getEffectiveDuration();
   const newTime = pct * duration;
   if (video.src) video.currentTime = newTime;
 });
