@@ -168,6 +168,31 @@
     font-style: italic;
   }
 
+  /* ---- Sound mode option ---- */
+  .sound-mode-option {
+    padding: 6px 12px;
+    text-align: center;
+  }
+
+  .sound-mode-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    user-select: none;
+    transition: color 0.2s;
+  }
+  .sound-mode-label:hover { color: var(--text); }
+
+  .sound-mode-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
   @keyframes revealPop {
     0% { transform: scale(1.4); }
     50% { transform: scale(0.9); }
@@ -278,6 +303,7 @@
   .btn-secondary { background: var(--bg-card); color: var(--text); border: 1px solid #333; }
   .btn-danger { background: linear-gradient(135deg, var(--pink), #c0392b); color: white; box-shadow: 0 4px 12px var(--pink-glow); }
   .btn-success { background: linear-gradient(135deg, var(--blue), var(--success)); color: #1a1a1a; box-shadow: 0 4px 12px var(--blue-glow); }
+  .btn-warning { background: linear-gradient(135deg, #f39c12, #e67e22); color: #1a1a1a; box-shadow: 0 4px 12px rgba(243,156,18,0.3); }
 
   /* ---- Guess Area ---- */
   .guess-area {
@@ -863,9 +889,18 @@
   <!-- Controls -->
   <div class="controls">
     <button class="btn btn-primary" id="btnPlay" onclick="togglePlay()" disabled>▶ Jouer</button>
-    <button class="btn btn-danger" id="btnCutoff" onclick="triggerCutoff()" disabled>✂ Couper le son</button>
+    <button class="btn btn-danger" id="btnCutoff" onclick="toggleCutoff()" disabled>✂ Couper le son</button>
     <button class="btn btn-success" id="btnReveal" onclick="revealNext()" disabled>👁 Révéler</button>
     <button class="btn btn-secondary" onclick="resetGame()">↺ Reset</button>
+  </div>
+
+  <!-- Sound mode option -->
+  <div class="sound-mode-option" id="soundModeOption">
+    <label class="sound-mode-label">
+      <input type="checkbox" id="soundModeCheck" onchange="toggleSoundMode()">
+      <span class="checkmark"></span>
+      🔊 Rejouer le son après avoir trouvé tous les mots
+    </label>
   </div>
 
   <!-- Guess Area -->
@@ -970,6 +1005,7 @@ let currentWindowIdx = -1; // which cutoff window we're in (-1 = none)
 let savedVolume = 0.8;     // remember volume before game mute
 let lastSubtitleHtml = '';  // track last rendered HTML to avoid flickering
 let lastLineIdx = -1;       // track current line to detect changes
+let replayAfterComplete = false; // sound mode: replay sound after all words found
 
 const video = document.getElementById('videoPlayer');
 video.volume = 0.8;
@@ -1174,6 +1210,7 @@ function play() {
   document.getElementById('btnCutoff').disabled = false;
   updateStatus(isMuted ? 'muted' : 'playing');
   startSubtitleLoop();
+  updateRevealButton();
 }
 
 function pause() {
@@ -1181,6 +1218,7 @@ function pause() {
   document.getElementById('btnPlay').innerHTML = '▶ Reprendre';
   updateStatus(isMuted ? 'muted' : 'paused');
   stopSubtitleLoop();
+  updateRevealButton();
 }
 
 function startSubtitleLoop() {
@@ -1310,6 +1348,15 @@ function renderCurrentSubtitle(t, force) {
 // ============================================================
 // GAME MECHANICS
 // ============================================================
+function toggleCutoff() {
+  if (isMuted) {
+    // Un-mute (toggle back)
+    undoCutoff();
+  } else {
+    triggerCutoff();
+  }
+}
+
 function triggerCutoff() {
   if (isMuted) return;
   isMuted = true;
@@ -1325,8 +1372,10 @@ function triggerCutoff() {
   pause();
 
   updateStatus('muted');
-  document.getElementById('btnCutoff').disabled = true;
-  document.getElementById('btnReveal').disabled = false;
+  document.getElementById('btnCutoff').innerHTML = '🔊 Remettre le son';
+  document.getElementById('btnCutoff').classList.remove('btn-danger');
+  document.getElementById('btnCutoff').classList.add('btn-warning');
+  updateRevealButton();
   document.getElementById('guessArea').classList.add('active');
   document.getElementById('guessInput').focus();
 
@@ -1338,6 +1387,18 @@ function triggerCutoff() {
   renderCurrentSubtitle(getCurrentTime());
 }
 
+function undoCutoff() {
+  // Toggle back — restore sound and let playback continue
+  isMuted = false;
+  video.volume = savedVolume;
+
+  document.getElementById('btnCutoff').innerHTML = '✂ Couper le son';
+  document.getElementById('btnCutoff').classList.remove('btn-warning');
+  document.getElementById('btnCutoff').classList.add('btn-danger');
+  updateRevealButton();
+  updateStatus('playing');
+}
+
 function restoreSound() {
   if (!isMuted) return;
   isMuted = false;
@@ -1346,9 +1407,46 @@ function restoreSound() {
   // Restore volume
   video.volume = savedVolume;
 
-  updateStatus('playing');
+  document.getElementById('btnCutoff').innerHTML = '✂ Couper le son';
+  document.getElementById('btnCutoff').classList.remove('btn-warning');
+  document.getElementById('btnCutoff').classList.add('btn-danger');
   document.getElementById('btnCutoff').disabled = false;
-  // Keep guess area open — player might still want to type for next window
+  updateRevealButton();
+  updateStatus('playing');
+}
+
+function toggleSoundMode() {
+  replayAfterComplete = document.getElementById('soundModeCheck').checked;
+}
+
+function updateRevealButton() {
+  const btn = document.getElementById('btnReveal');
+  // Only active when muted (in a cutoff window) AND video is paused AND window not complete
+  if (!isMuted || !video.paused) {
+    btn.disabled = true;
+    return;
+  }
+
+  const winIdx = currentWindowIdx >= 0 ? currentWindowIdx : 0;
+  const windowWords = hiddenWordIndices.filter(h => h.windowIdx === winIdx);
+  const allFound = windowWords.length > 0 && windowWords.every(h => {
+    const key = `${h.lineIdx}-${h.tokenIdx}`;
+    return revealedWords.has(key);
+  });
+
+  btn.disabled = allFound;
+}
+
+// Called when all words in current window are found
+function onWindowComplete() {
+  updateRevealButton();
+
+  if (replayAfterComplete) {
+    // Restore sound and auto-play so the player can hear the passage
+    video.volume = savedVolume;
+    // Keep isMuted true so we re-mute when leaving the window
+    play();
+  }
 }
 
 function buildAllHiddenWords() {
@@ -1563,6 +1661,9 @@ function checkWin() {
   }
 
   if (remaining === 0) {
+    // Current window is complete
+    onWindowComplete();
+
     // Check if ALL windows are complete
     let totalRemaining = 0;
     for (const item of hiddenWordIndices) {
@@ -1575,6 +1676,8 @@ function checkWin() {
       document.getElementById('wpComplete').textContent = '🏆 Tout trouvé ! Bravo !';
     }
   }
+
+  updateRevealButton();
 }
 
 function updateWindowProgress() {
@@ -1657,6 +1760,9 @@ function resetGame() {
   document.getElementById('currentTime').textContent = '0:00';
   document.getElementById('btnPlay').innerHTML = '▶ Jouer';
   document.getElementById('btnCutoff').disabled = true;
+  document.getElementById('btnCutoff').innerHTML = '✂ Couper le son';
+  document.getElementById('btnCutoff').classList.remove('btn-warning');
+  document.getElementById('btnCutoff').classList.add('btn-danger');
   document.getElementById('btnReveal').disabled = true;
   document.getElementById('guessArea').classList.remove('active');
   document.getElementById('guessFeedback').innerHTML = '';
