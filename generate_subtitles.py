@@ -12,7 +12,6 @@ Prérequis :
 Usage :
   python generate_subtitles.py videos/ma-chanson/video.mp4
   python generate_subtitles.py videos/ma-chanson/video.mp4 --language fr --model medium
-  python generate_subtitles.py videos/ma-chanson/video.mp4 -w  # timestamps mot par mot
   python generate_subtitles.py videos/ma-chanson/  # détecte auto la vidéo
 """
 
@@ -37,7 +36,7 @@ def find_video(path):
     return None
 
 
-def generate_subtitles(video_path, language="fr", model_name="base", word_timestamps=False):
+def generate_subtitles(video_path, language="fr", model_name="base"):
     """Génère les sous-titres avec Whisper."""
     try:
         import whisper
@@ -54,9 +53,7 @@ def generate_subtitles(video_path, language="fr", model_name="base", word_timest
 
     print(f"🎵 Transcription de : {video_path.name}")
     print(f"   Langue : {language}")
-    if word_timestamps:
-        print(f"   ⏱  Timestamps mot par mot activés")
-    result = model.transcribe(str(video_path), language=language, word_timestamps=word_timestamps)
+    result = model.transcribe(str(video_path), language=language)
 
     # Générer le SRT
     srt_path = output_dir / "subtitles.srt"
@@ -131,10 +128,6 @@ def main():
         "--model", "-m", default="base",
         help="Modèle Whisper: tiny, base, small, medium, large (défaut: base)"
     )
-    parser.add_argument(
-        "--word_timestamps", "-w", action="store_true",
-        help="Active les timestamps mot par mot (meilleur calage sur la voix)"
-    )
     args = parser.parse_args()
 
     video = find_video(args.path)
@@ -143,7 +136,7 @@ def main():
         print(f"   Extensions supportées : {', '.join(sorted(VIDEO_EXTENSIONS))}")
         sys.exit(1)
 
-    generate_subtitles(video, language=args.language, model_name=args.model, word_timestamps=args.word_timestamps)
+    generate_subtitles(video, language=args.language, model_name=args.model)
 
 
 if __name__ == "__main__":

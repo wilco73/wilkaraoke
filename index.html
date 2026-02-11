@@ -465,6 +465,218 @@
   .difficulty.medium { background: rgba(247,183,49,0.15); color: var(--accent); }
   .difficulty.hard { background: rgba(214,48,49,0.15); color: var(--danger); }
 
+  .tag-badge {
+    display: inline-block;
+    background: rgba(108, 92, 231, 0.15);
+    color: #a29bfe;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .tags-row { margin-top: 3px; }
+
+  .btn-sm.party {
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    color: white;
+  }
+
+  /* ---- Party Modal ---- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.hidden { display: none; }
+
+  .modal-box {
+    background: var(--bg-card);
+    border: 1px solid #222244;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 480px;
+    width: 92%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-box h2 {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 1.3rem;
+    background: linear-gradient(135deg, #6c5ce7, var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  .modal-field input[type="number"] {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #333;
+    border-radius: 10px;
+    background: #1a1a2e;
+    color: var(--text);
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+  }
+  .modal-field input[type="number"]:focus { border-color: var(--accent); }
+
+  .filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .filter-chip {
+    padding: 5px 12px;
+    border-radius: 16px;
+    border: 1px solid #333;
+    background: #1a1a2e;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .filter-chip:hover { border-color: #555; color: var(--text); }
+  .filter-chip.selected {
+    background: rgba(108, 92, 231, 0.25);
+    border-color: #6c5ce7;
+    color: #a29bfe;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .modal-actions .btn { flex: 1; }
+
+  .modal-match-count {
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-top: 10px;
+  }
+  .modal-match-count strong { color: var(--accent); }
+
+  /* ---- Party HUD ---- */
+  .party-hud {
+    background: linear-gradient(135deg, rgba(108,92,231,0.15), rgba(162,155,254,0.08));
+    border: 1px solid rgba(108,92,231,0.3);
+    border-radius: 12px;
+    padding: 10px 16px;
+    margin-bottom: 10px;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .party-hud.active { display: flex; }
+  .party-hud .party-info {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #a29bfe;
+  }
+  .party-hud .party-score {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 1.1rem;
+    color: var(--accent);
+  }
+  .party-hud .btn-sm {
+    font-size: 0.72rem;
+    padding: 4px 10px;
+  }
+
+  /* ---- Countdown overlay ---- */
+  .countdown-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    pointer-events: none;
+  }
+  .countdown-overlay.hidden { display: none; }
+  .countdown-number {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 5rem;
+    color: var(--accent);
+    animation: countPulse 1s ease infinite;
+  }
+  .countdown-label {
+    font-size: 1rem;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+  @keyframes countPulse {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+  }
+
+  /* ---- Party Results Modal ---- */
+  .party-results-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .party-result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #222;
+  }
+  .party-result-row .song-name {
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .party-result-row .song-artist-sm {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+  }
+  .party-result-row .result-score {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 1rem;
+    color: var(--accent);
+  }
+  .party-total-score {
+    text-align: center;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 2px solid #333;
+  }
+  .party-total-score .label { font-size: 0.8rem; color: var(--text-dim); }
+  .party-total-score .big-score {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 2.2rem;
+    color: var(--accent);
+  }
+
   .no-video-badge {
     font-size: 0.65rem;
     padding: 2px 8px;
@@ -830,6 +1042,56 @@
   </div>
 </div>
 
+<!-- Party Mode Modal -->
+<div class="modal-overlay hidden" id="partyModal">
+  <div class="modal-box">
+    <h2>🎮 Nouvelle Partie</h2>
+
+    <div class="modal-field">
+      <label>Nombre de chansons</label>
+      <input type="number" id="partyCount" value="5" min="1" max="99" oninput="updatePartyPreview()">
+    </div>
+
+    <div class="modal-field">
+      <label>Filtrer par difficulté</label>
+      <div class="filter-chips" id="difficultyChips"></div>
+    </div>
+
+    <div class="modal-field">
+      <label>Filtrer par artiste</label>
+      <div class="filter-chips" id="artistChips"></div>
+    </div>
+
+    <div class="modal-field">
+      <label>Filtrer par tags</label>
+      <div class="filter-chips" id="tagChips"></div>
+    </div>
+
+    <div class="modal-match-count" id="partyMatchCount"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closePartyModal()">Annuler</button>
+      <button class="btn btn-primary" id="btnStartParty" onclick="startParty()">🎮 Lancer la partie</button>
+    </div>
+  </div>
+</div>
+
+<!-- Party Results Modal -->
+<div class="modal-overlay hidden" id="partyResultsModal">
+  <div class="modal-box">
+    <h2>🏆 Résultats de la Partie</h2>
+    <div class="party-results-list" id="partyResultsList"></div>
+    <div class="party-total-score">
+      <div class="label">SCORE TOTAL</div>
+      <div class="big-score" id="partyFinalScore">0</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closePartyResults()">Fermer</button>
+      <button class="btn btn-primary" onclick="closePartyResults(); openPartyModal();">🎮 Rejouer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Loading -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
@@ -846,9 +1108,22 @@
     <span id="copyMsg" style="color:var(--success);font-size:0.75rem;opacity:0;transition:opacity 0.3s;">✓ URL overlay copiée !</span>
   </div>
 
+  <!-- Party HUD -->
+  <div class="party-hud" id="partyHud">
+    <span class="party-info" id="partyInfo">🎮 Chanson 1/5</span>
+    <span class="party-score" id="partyTotalDisplay">Score: 0</span>
+    <button class="btn-sm" onclick="endParty()">✕ Arrêter</button>
+  </div>
+
   <!-- Video Stage -->
   <div class="video-stage" id="videoStage">
     <video id="videoPlayer" playsinline crossorigin="anonymous"></video>
+
+    <!-- Countdown overlay -->
+    <div class="countdown-overlay hidden" id="countdownOverlay">
+      <div class="countdown-number" id="countdownNumber">5</div>
+      <div class="countdown-label" id="countdownLabel">Prochaine chanson...</div>
+    </div>
 
     <div class="placeholder" id="placeholder">
       <div class="icon">🎬</div>
@@ -936,12 +1211,13 @@
     <div class="library-header">
       <h3>📚 Bibliothèque</h3>
       <div class="library-actions">
+        <button class="btn-sm party" onclick="openPartyModal()">🎮 Partie</button>
         <button class="btn-sm random" onclick="pickRandom()">🎲 Au hasard</button>
         <button class="btn-sm refresh" onclick="refreshLibrary()">↻ Rafraîchir</button>
       </div>
     </div>
     <div class="song-count" id="songCount"></div>
-    <input type="text" class="search-box" id="searchBox" placeholder="🔍 Rechercher une chanson ou un artiste..." oninput="filterSongs()">
+    <input type="text" class="search-box" id="searchBox" placeholder="🔍 Rechercher une chanson, artiste ou tag..." oninput="filterSongs()">
     <div class="song-list" id="songList"></div>
   </div>
 
@@ -1006,13 +1282,26 @@ let lastSubtitleHtml = '';  // track last rendered HTML to avoid flickering
 let lastLineIdx = -1;       // track current line to detect changes
 let replayAfterComplete = false; // sound mode: replay sound after all words found
 
+// Party mode state
+let partyMode = false;
+let partyQueue = [];          // array of song objects for the party
+let partyCurrentIdx = -1;     // which song in the queue
+let partyTotalScore = 0;      // cumulative score across songs
+let partyScores = [];         // per-song scores [{title, artist, score, total}]
+let partyCountdown = null;    // countdown timer
+
 const video = document.getElementById('videoPlayer');
 video.volume = 0.8;
 
-// End of video → show final score
+// End of video → show final score or next party song
 video.addEventListener('ended', () => {
   pause();
-  showFinalScore();
+  if (partyMode) {
+    showFinalScore();
+    onSongEndedInParty();
+  } else {
+    showFinalScore();
+  }
 });
 
 // Update total time and re-render markers when video metadata loads
@@ -1091,6 +1380,7 @@ function renderSongList(list) {
     const duration = formatTime(song.duration);
     const windows = song.cutoff_windows || [];
     const windowsStr = windows.map(w => `${formatTime(w[0])}→${formatTime(w[1])}`).join(', ');
+    const tagsHtml = (song.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
 
     return `
       <div class="song-item ${isActive ? 'active' : ''}" onclick="selectSong('${song.id}')">
@@ -1098,6 +1388,7 @@ function renderSongList(list) {
           <div class="title">${song.title}</div>
           <div class="artist">${song.artist}</div>
           <div class="meta">${duration} • ✂ ${windowsStr}</div>
+          ${tagsHtml ? `<div class="tags-row">${tagsHtml}</div>` : ''}
         </div>
         <div class="song-right">
           ${!song.has_video ? '<span class="no-video-badge">SRT seul</span>' : ''}
@@ -1115,7 +1406,8 @@ function filterSongs() {
   }
   const filtered = songs.filter(s =>
     s.title.toLowerCase().includes(q) ||
-    s.artist.toLowerCase().includes(q)
+    s.artist.toLowerCase().includes(q) ||
+    (s.tags || []).some(tag => tag.toLowerCase().includes(q))
   );
   renderSongList(filtered);
 }
@@ -1531,7 +1823,7 @@ function checkGuess() {
   }
 
   if (totalFound > 0) {
-    document.getElementById('scoreValue').textContent = score;
+    document.getElementById('scoreValue').textContent = partyMode ? (partyTotalScore + score) : score;
     input.value = '';
     input.style.borderColor = 'var(--success)';
 
@@ -1714,8 +2006,13 @@ function showFinalScore() {
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
   const emoji = pct >= 80 ? '🏆' : pct >= 50 ? '👏' : '😅';
 
-  document.getElementById('subtitleText').innerHTML =
-    `<span class="word" style="color: var(--accent);">${emoji} Terminé ! Score : ${score}/${total} (${pct}%)</span>`;
+  if (partyMode) {
+    document.getElementById('subtitleText').innerHTML =
+      `<span class="word" style="color: var(--accent);">${emoji} ${score}/${total} (${pct}%) — Score total : ${partyTotalScore + score}</span>`;
+  } else {
+    document.getElementById('subtitleText').innerHTML =
+      `<span class="word" style="color: var(--accent);">${emoji} Terminé ! Score : ${score}/${total} (${pct}%)</span>`;
+  }
 }
 
 function resetGame() {
@@ -1842,6 +2139,285 @@ document.getElementById('progressContainer').addEventListener('click', (e) => {
   const newTime = pct * duration;
   if (video.src) video.currentTime = newTime;
 });
+
+// ============================================================
+// PARTY MODE
+// ============================================================
+function openPartyModal() {
+  // Build filter chips from available songs
+  const artists = [...new Set(songs.map(s => s.artist))].sort();
+  const allTags = [...new Set(songs.flatMap(s => s.tags || []))].sort();
+  const difficulties = ['easy', 'medium', 'hard'];
+  const diffLabels = {easy: '🟢 Facile', medium: '🟡 Moyen', hard: '🔴 Difficile'};
+
+  document.getElementById('difficultyChips').innerHTML = difficulties
+    .filter(d => songs.some(s => s.difficulty === d))
+    .map(d => `<span class="filter-chip" data-value="${d}" onclick="toggleChip(this)">${diffLabels[d]}</span>`)
+    .join('');
+
+  document.getElementById('artistChips').innerHTML = artists
+    .map(a => `<span class="filter-chip" data-value="${a}" onclick="toggleChip(this)">${a}</span>`)
+    .join('');
+
+  document.getElementById('tagChips').innerHTML = allTags
+    .map(t => `<span class="filter-chip" data-value="${t}" onclick="toggleChip(this)">${t}</span>`)
+    .join('');
+
+  document.getElementById('partyCount').max = songs.length;
+  updatePartyPreview();
+  document.getElementById('partyModal').classList.remove('hidden');
+}
+
+function closePartyModal() {
+  document.getElementById('partyModal').classList.add('hidden');
+}
+
+function toggleChip(el) {
+  el.classList.toggle('selected');
+  updatePartyPreview();
+}
+
+function getSelectedValues(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .filter-chip.selected`)]
+    .map(el => el.dataset.value);
+}
+
+function getFilteredSongs() {
+  const selDiff = getSelectedValues('difficultyChips');
+  const selArtists = getSelectedValues('artistChips');
+  const selTags = getSelectedValues('tagChips');
+
+  return songs.filter(s => {
+    if (selDiff.length > 0 && !selDiff.includes(s.difficulty)) return false;
+    if (selArtists.length > 0 && !selArtists.includes(s.artist)) return false;
+    if (selTags.length > 0 && !(s.tags || []).some(t => selTags.includes(t))) return false;
+    return true;
+  });
+}
+
+function updatePartyPreview() {
+  const matched = getFilteredSongs();
+  let count = parseInt(document.getElementById('partyCount').value) || 1;
+  const maxAvail = matched.length;
+
+  if (count > maxAvail) {
+    document.getElementById('partyCount').value = maxAvail;
+    count = maxAvail;
+  }
+
+  const el = document.getElementById('partyMatchCount');
+  el.innerHTML = `<strong>${maxAvail}</strong> chanson${maxAvail > 1 ? 's' : ''} correspondent aux filtres`;
+
+  document.getElementById('btnStartParty').disabled = maxAvail === 0;
+}
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+async function startParty() {
+  const matched = getFilteredSongs();
+  let count = parseInt(document.getElementById('partyCount').value) || 1;
+  count = Math.min(count, matched.length);
+
+  if (count === 0) return;
+
+  // Shuffle and pick
+  partyQueue = shuffleArray(matched).slice(0, count);
+  partyCurrentIdx = -1;
+  partyTotalScore = 0;
+  partyScores = [];
+  partyMode = true;
+
+  closePartyModal();
+
+  // Show party HUD
+  document.getElementById('partyHud').classList.add('active');
+
+  // Start first song
+  await partyNextSong();
+}
+
+async function partyNextSong() {
+  partyCurrentIdx++;
+
+  if (partyCurrentIdx >= partyQueue.length) {
+    // Party is over
+    showPartyResults();
+    return;
+  }
+
+  const songStub = partyQueue[partyCurrentIdx];
+
+  // Update HUD
+  document.getElementById('partyInfo').textContent =
+    `🎮 Chanson ${partyCurrentIdx + 1}/${partyQueue.length}`;
+  document.getElementById('partyTotalDisplay').textContent =
+    `Score: ${partyTotalScore}`;
+
+  // Load song (need full detail with lyrics)
+  resetGameForParty();
+  showLoading(true);
+
+  try {
+    currentSong = await fetchSongDetail(songStub.id);
+  } catch (e) {
+    console.error('Erreur chargement:', e);
+    showLoading(false);
+    await partyNextSong(); // skip
+    return;
+  }
+
+  const placeholder = document.getElementById('placeholder');
+  if (currentSong.video_url) {
+    video.src = currentSong.video_url;
+    video.load();
+    placeholder.style.display = 'none';
+  } else {
+    video.removeAttribute('src');
+    placeholder.style.display = 'flex';
+    placeholder.querySelector('.msg').textContent = `🎵 ${currentSong.title} — ${currentSong.artist}`;
+  }
+
+  document.getElementById('totalTime').textContent = formatTime(currentSong.duration);
+  renderCutoffMarkers();
+
+  document.getElementById('btnPlay').disabled = false;
+  document.getElementById('scoreBox').style.display = 'block';
+  document.getElementById('scoreValue').textContent = partyTotalScore;
+  document.getElementById('subtitleText').innerHTML =
+    `<span class="word" style="color: var(--accent);">🎮 ${partyCurrentIdx + 1}/${partyQueue.length} — ${currentSong.title} ♪</span>`;
+
+  renderSongList(songs.length ? songs : [currentSong]);
+  showLoading(false);
+
+  // Auto-play
+  togglePlay();
+}
+
+function resetGameForParty() {
+  // Reset game state but keep party score
+  pause();
+  isMuted = false;
+  currentWindowIdx = -1;
+  score = 0; // per-song score
+  revealedWords = new Set();
+  hiddenWordIndices = [];
+  lastSubtitleHtml = '';
+  lastLineIdx = -1;
+  if (currentSong) currentSong._processedLyrics = null;
+
+  video.volume = savedVolume;
+  video.currentTime = 0;
+
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('currentTime').textContent = '0:00';
+  document.getElementById('btnPlay').innerHTML = '▶ Jouer';
+  document.getElementById('btnReveal').disabled = true;
+  document.getElementById('guessArea').classList.remove('active');
+  document.getElementById('guessFeedback').innerHTML = '';
+  document.getElementById('windowProgress').classList.remove('active');
+  document.getElementById('wpComplete').classList.remove('show');
+  document.getElementById('countdownOverlay').classList.add('hidden');
+  updateStatus('paused');
+}
+
+function onSongEndedInParty() {
+  // Save per-song score
+  const songTotal = hiddenWordIndices.length * 10;
+  partyScores.push({
+    title: currentSong.title,
+    artist: currentSong.artist,
+    score: score,
+    total: songTotal,
+  });
+  partyTotalScore += score;
+
+  // Update HUD
+  document.getElementById('partyTotalDisplay').textContent =
+    `Score: ${partyTotalScore}`;
+
+  // Is there a next song?
+  if (partyCurrentIdx + 1 >= partyQueue.length) {
+    // Last song → show results
+    showPartyResults();
+    return;
+  }
+
+  // Show countdown
+  const overlay = document.getElementById('countdownOverlay');
+  const numEl = document.getElementById('countdownNumber');
+  const labelEl = document.getElementById('countdownLabel');
+  overlay.classList.remove('hidden');
+  let count = 5;
+  numEl.textContent = count;
+
+  const nextSong = partyQueue[partyCurrentIdx + 1];
+  labelEl.textContent = `Prochaine : ${nextSong.title || 'chanson suivante'}...`;
+
+  if (partyCountdown) clearInterval(partyCountdown);
+  partyCountdown = setInterval(() => {
+    count--;
+    if (count <= 0) {
+      clearInterval(partyCountdown);
+      partyCountdown = null;
+      overlay.classList.add('hidden');
+      partyNextSong();
+    } else {
+      numEl.textContent = count;
+    }
+  }, 1000);
+}
+
+function showPartyResults() {
+  partyMode = false;
+  document.getElementById('partyHud').classList.remove('active');
+
+  const list = document.getElementById('partyResultsList');
+  list.innerHTML = partyScores.map((r, i) => {
+    const pct = r.total > 0 ? Math.round((r.score / r.total) * 100) : 0;
+    const emoji = pct >= 80 ? '🏆' : pct >= 50 ? '👏' : '😅';
+    return `
+      <div class="party-result-row">
+        <div>
+          <div class="song-name">${emoji} ${r.title}</div>
+          <div class="song-artist-sm">${r.artist} — ${r.score}/${r.total} pts (${pct}%)</div>
+        </div>
+        <div class="result-score">${r.score}</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('partyFinalScore').textContent = partyTotalScore;
+  document.getElementById('partyResultsModal').classList.remove('hidden');
+}
+
+function closePartyResults() {
+  document.getElementById('partyResultsModal').classList.add('hidden');
+}
+
+function endParty() {
+  if (partyCountdown) { clearInterval(partyCountdown); partyCountdown = null; }
+  document.getElementById('countdownOverlay').classList.add('hidden');
+
+  // Save current song score
+  if (currentSong && partyMode) {
+    const songTotal = hiddenWordIndices.length * 10;
+    partyScores.push({
+      title: currentSong.title,
+      artist: currentSong.artist,
+      score: score,
+      total: songTotal,
+    });
+    partyTotalScore += score;
+  }
+
+  showPartyResults();
+}
 
 // ============================================================
 // STATE SYNC → push state to server for overlay
