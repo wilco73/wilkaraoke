@@ -118,10 +118,14 @@
   }
 
   .subtitle-text {
-    font-size: 1.5rem;
+    font-size: var(--sub-font-size, 1.5rem);
     font-weight: 800;
     line-height: 1.6;
     text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+    color: var(--sub-color-base, #f0f0f0);
+    background: var(--sub-bg, transparent);
+    padding: 4px 12px;
+    border-radius: 8px;
   }
 
   .subtitle-text .word {
@@ -130,9 +134,10 @@
     padding: 2px 4px;
     border-radius: 4px;
     transition: all 0.25s;
+    color: var(--sub-color-base, #f0f0f0);
   }
 
-  .word.highlighted { color: var(--accent); transform: scale(1.08); }
+  .word.highlighted { color: var(--sub-color-highlight, var(--accent)); transform: scale(1.08); }
 
   .word.hidden-word {
     background: rgba(255,255,255,0.13);
@@ -153,18 +158,18 @@
 
   .word.revealed {
     background: rgba(0, 184, 148, 0.3);
-    color: var(--success);
+    color: var(--sub-color-revealed, var(--success));
     animation: revealPop 0.4s ease;
   }
 
   .word.revealed-static {
     background: rgba(0, 184, 148, 0.25);
-    color: var(--success);
+    color: var(--sub-color-revealed, var(--success));
   }
 
   .word.backing-vocal {
-    color: var(--text-dim);
-    opacity: 0.6;
+    color: var(--sub-color-backing, var(--text-dim));
+    opacity: var(--sub-alpha-backing, 0.6);
     font-style: italic;
   }
 
@@ -715,6 +720,93 @@
     color: var(--accent);
   }
 
+  /* ---- Subtitle Settings ---- */
+  .subtitle-settings {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid #222244;
+  }
+
+  .subtitle-settings h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .subtitle-settings .settings-body { display: none; }
+  .subtitle-settings.open .settings-body { display: block; }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .setting-row label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    min-width: 160px;
+  }
+
+  .setting-row input[type="color"] {
+    width: 36px;
+    height: 30px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background: #1a1a2e;
+    cursor: pointer;
+    padding: 2px;
+  }
+
+  .setting-row input[type="range"] {
+    flex: 1;
+    max-width: 120px;
+    accent-color: var(--accent);
+  }
+
+  .setting-row .range-value {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  .subtitle-preview {
+    background: #111;
+    border-radius: 12px;
+    padding: 24px 20px;
+    margin-top: 14px;
+    text-align: center;
+    position: relative;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .subtitle-preview .preview-text {
+    font-size: 1.3rem;
+    font-weight: 800;
+    line-height: 1.6;
+  }
+
+  .subtitle-preview .preview-text .word {
+    display: inline-block;
+    margin: 0 3px;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+
   /* ---- Info Panel ---- */
   .info-panel {
     background: var(--bg-card);
@@ -1233,6 +1325,59 @@
     <div class="song-list" id="songList"></div>
   </div>
 
+  <!-- Subtitle Settings -->
+  <div class="subtitle-settings" id="subtitleSettings">
+    <h3 onclick="this.parentElement.classList.toggle('open')">
+      🎨 Personnalisation des sous-titres
+      <span id="settingsToggle">▶</span>
+    </h3>
+    <div class="settings-body">
+
+      <div class="setting-row">
+        <label>Texte normal</label>
+        <input type="color" id="subColorBase" value="#f0f0f0" oninput="updateSubSettings()">
+      </div>
+
+      <div class="setting-row">
+        <label>Mot en surbrillance</label>
+        <input type="color" id="subColorHighlight" value="#f7b731" oninput="updateSubSettings()">
+      </div>
+
+      <div class="setting-row">
+        <label>Mot trouvé</label>
+        <input type="color" id="subColorRevealed" value="#00b894" oninput="updateSubSettings()">
+      </div>
+
+      <div class="setting-row">
+        <label>Chœurs (parenthèses)</label>
+        <input type="color" id="subColorBacking" value="#8888aa" oninput="updateSubSettings()">
+        <input type="range" id="subAlphaBacking" min="10" max="100" value="60" oninput="updateSubSettings()">
+        <span class="range-value" id="subAlphaBackingVal">60%</span>
+      </div>
+
+      <div class="setting-row">
+        <label>Fond des sous-titres</label>
+        <input type="color" id="subBgColor" value="#000000" oninput="updateSubSettings()">
+        <input type="range" id="subBgAlpha" min="0" max="100" value="0" oninput="updateSubSettings()">
+        <span class="range-value" id="subBgAlphaVal">0%</span>
+      </div>
+
+      <div class="setting-row">
+        <label>Taille du texte</label>
+        <input type="range" id="subFontSize" min="12" max="40" value="24" oninput="updateSubSettings()">
+        <span class="range-value" id="subFontSizeVal">24px</span>
+      </div>
+
+      <div class="subtitle-preview" id="subtitlePreview">
+        <div class="preview-text" id="previewText"></div>
+      </div>
+
+      <div style="text-align:center;margin-top:10px;">
+        <button class="btn btn-secondary" onclick="resetSubSettings()" style="font-size:0.8rem;padding:6px 16px;">↺ Réinitialiser</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Info -->
   <div class="info-panel">
     <h3>📡 Mode Stream (OBS)</h3>
@@ -1700,6 +1845,134 @@ function restoreSound() {
 function toggleSoundMode() {
   replayAfterComplete = document.getElementById('soundModeCheck').checked;
 }
+
+// ============================================================
+// SUBTITLE CUSTOMIZATION
+// ============================================================
+const SUB_DEFAULTS = {
+  colorBase: '#f0f0f0',
+  colorHighlight: '#f7b731',
+  colorRevealed: '#00b894',
+  colorBacking: '#8888aa',
+  alphaBacking: 60,
+  bgColor: '#000000',
+  bgAlpha: 0,
+  fontSize: 24,
+};
+
+let subSettings = { ...SUB_DEFAULTS };
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function updateSubSettings() {
+  subSettings.colorBase = document.getElementById('subColorBase').value;
+  subSettings.colorHighlight = document.getElementById('subColorHighlight').value;
+  subSettings.colorRevealed = document.getElementById('subColorRevealed').value;
+  subSettings.colorBacking = document.getElementById('subColorBacking').value;
+  subSettings.alphaBacking = parseInt(document.getElementById('subAlphaBacking').value);
+  subSettings.bgColor = document.getElementById('subBgColor').value;
+  subSettings.bgAlpha = parseInt(document.getElementById('subBgAlpha').value);
+  subSettings.fontSize = parseInt(document.getElementById('subFontSize').value);
+
+  // Update display values
+  document.getElementById('subAlphaBackingVal').textContent = `${subSettings.alphaBacking}%`;
+  document.getElementById('subBgAlphaVal').textContent = `${subSettings.bgAlpha}%`;
+  document.getElementById('subFontSizeVal').textContent = `${subSettings.fontSize}px`;
+
+  applySubSettings();
+  updateSubPreview();
+  saveSubSettings();
+}
+
+function applySubSettings() {
+  const root = document.documentElement.style;
+  root.setProperty('--sub-color-base', subSettings.colorBase);
+  root.setProperty('--sub-color-highlight', subSettings.colorHighlight);
+  root.setProperty('--sub-color-revealed', subSettings.colorRevealed);
+  root.setProperty('--sub-color-backing', subSettings.colorBacking);
+  root.setProperty('--sub-alpha-backing', (subSettings.alphaBacking / 100).toFixed(2));
+  root.setProperty('--sub-font-size', `${subSettings.fontSize}px`);
+
+  const bgAlpha = subSettings.bgAlpha / 100;
+  root.setProperty('--sub-bg', bgAlpha > 0 ? hexToRgba(subSettings.bgColor, bgAlpha) : 'transparent');
+}
+
+function updateSubPreview() {
+  const preview = document.getElementById('previewText');
+  const s = subSettings;
+  const bg = s.bgAlpha > 0 ? hexToRgba(s.bgColor, s.bgAlpha / 100) : 'transparent';
+
+  preview.style.fontSize = `${s.fontSize}px`;
+  preview.style.background = bg;
+  preview.style.padding = bg !== 'transparent' ? '4px 12px' : '0';
+  preview.style.borderRadius = '8px';
+
+  preview.innerHTML = [
+    `<span class="word" style="color:${s.colorBase}">Je</span>`,
+    `<span class="word" style="color:${s.colorHighlight}">chante</span>`,
+    `<span class="word" style="color:${s.colorBase}">les</span>`,
+    `<span class="word" style="background:rgba(255,255,255,0.13);color:transparent;border-radius:6px;min-width:50px;position:relative;">
+      <span style="color:${s.colorBase};opacity:0.5;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:0.7em;letter-spacing:2px;">____</span>paroles</span>`,
+    `<span class="word" style="color:${s.colorRevealed};background:rgba(0,184,148,0.25);">trouvé</span>`,
+    `<span class="word" style="color:${s.colorBacking};opacity:${s.alphaBacking/100};font-style:italic;">(chœurs)</span>`,
+  ].join(' ');
+}
+
+function resetSubSettings() {
+  subSettings = { ...SUB_DEFAULTS };
+
+  document.getElementById('subColorBase').value = subSettings.colorBase;
+  document.getElementById('subColorHighlight').value = subSettings.colorHighlight;
+  document.getElementById('subColorRevealed').value = subSettings.colorRevealed;
+  document.getElementById('subColorBacking').value = subSettings.colorBacking;
+  document.getElementById('subAlphaBacking').value = subSettings.alphaBacking;
+  document.getElementById('subBgColor').value = subSettings.bgColor;
+  document.getElementById('subBgAlpha').value = subSettings.bgAlpha;
+  document.getElementById('subFontSize').value = subSettings.fontSize;
+
+  updateSubSettings();
+}
+
+function saveSubSettings() {
+  try { localStorage.setItem('karaoke_sub_settings', JSON.stringify(subSettings)); } catch(e) {}
+}
+
+function loadSubSettings() {
+  try {
+    const saved = localStorage.getItem('karaoke_sub_settings');
+    if (saved) {
+      subSettings = { ...SUB_DEFAULTS, ...JSON.parse(saved) };
+
+      document.getElementById('subColorBase').value = subSettings.colorBase;
+      document.getElementById('subColorHighlight').value = subSettings.colorHighlight;
+      document.getElementById('subColorRevealed').value = subSettings.colorRevealed;
+      document.getElementById('subColorBacking').value = subSettings.colorBacking;
+      document.getElementById('subAlphaBacking').value = subSettings.alphaBacking;
+      document.getElementById('subBgColor').value = subSettings.bgColor;
+      document.getElementById('subBgAlpha').value = subSettings.bgAlpha;
+      document.getElementById('subFontSize').value = subSettings.fontSize;
+
+      updateSubSettings();
+    } else {
+      updateSubPreview();
+    }
+  } catch(e) {
+    updateSubPreview();
+  }
+}
+
+// Toggle arrow for settings panel
+document.getElementById('subtitleSettings').addEventListener('click', function(e) {
+  if (e.target.tagName === 'H3' || e.target.id === 'settingsToggle') {
+    document.getElementById('settingsToggle').textContent =
+      this.classList.contains('open') ? '▶' : '▼';
+  }
+});
 
 function updateRevealButton() {
   const btn = document.getElementById('btnReveal');
@@ -2482,6 +2755,8 @@ function pushState() {
     party_current: partyMode ? (partyCurrentIdx + 1) : 0,
     party_total: partyMode ? partyQueue.length : 0,
     party_countdown: partyCountdownValue,  // 0 = no countdown
+    // Subtitle customization
+    sub_settings: subSettings,
   };
 
   fetch(`${API}/api/state?room=${encodeURIComponent(currentRoom)}`, {
@@ -2573,6 +2848,9 @@ async function init() {
   // Then check localStorage
   let savedRoom = null;
   try { savedRoom = localStorage.getItem('karaoke_room'); } catch(e) {}
+
+  // Load subtitle settings
+  loadSubSettings();
 
   if (urlRoom) {
     enterRoom(urlRoom);

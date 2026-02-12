@@ -476,6 +476,32 @@ function renderOverlay(state) {
   const pct = Math.min((t / duration) * 100, 100);
   document.getElementById('progressFill').style.width = `${pct}%`;
 
+  // Apply subtitle customization from régie
+  const ss = state.sub_settings;
+  if (ss) {
+    const root = document.documentElement.style;
+    const subtitleTextEl = document.querySelector('.subtitle-text');
+    root.setProperty('--sub-color-base', ss.colorBase || '#f0f0f0');
+    root.setProperty('--sub-color-highlight', ss.colorHighlight || '#f7b731');
+    root.setProperty('--sub-color-revealed', ss.colorRevealed || '#00b894');
+    if (subtitleTextEl) {
+      subtitleTextEl.style.fontSize = `${ss.fontSize || 28}px`;
+      subtitleTextEl.style.color = ss.colorBase || '#f0f0f0';
+      const bgA = (ss.bgAlpha || 0) / 100;
+      if (bgA > 0) {
+        const r = parseInt((ss.bgColor||'#000000').slice(1,3),16);
+        const g = parseInt((ss.bgColor||'#000000').slice(3,5),16);
+        const b = parseInt((ss.bgColor||'#000000').slice(5,7),16);
+        subtitleTextEl.style.background = `rgba(${r},${g},${b},${bgA})`;
+        subtitleTextEl.style.padding = '4px 14px';
+        subtitleTextEl.style.borderRadius = '10px';
+      } else {
+        subtitleTextEl.style.background = 'transparent';
+        subtitleTextEl.style.padding = '';
+      }
+    }
+  }
+
   // Subtitles
   const offset = state.subtitle_offset || 0;
   const adjustedT = t + offset;
@@ -491,6 +517,12 @@ function renderOverlay(state) {
     const lineInWindow = windows.some(w => currentLine.end > w[0] && currentLine.start < w[1]);
 
     let inParens = false;
+    const colorBase = (ss && ss.colorBase) || '#f0f0f0';
+    const colorHighlight = (ss && ss.colorHighlight) || '#f7b731';
+    const colorRevealed = (ss && ss.colorRevealed) || '#00b894';
+    const colorBacking = (ss && ss.colorBacking) || '#8888aa';
+    const alphaBacking = ss ? (ss.alphaBacking || 60) / 100 : 0.6;
+
     const html = words.map((word, i) => {
       if (word.includes('(')) inParens = true;
       const isParenWord = inParens;
@@ -508,12 +540,13 @@ function renderOverlay(state) {
         const suffix = match ? match[3] : '';
         return `${esc(prefix)}<span class="word hidden-word">${esc(core)}</span>${esc(suffix)}`;
       } else if (isRevealed) {
-        return `<span class="word revealed">${esc(word)}</span>`;
+        return `<span class="word" style="background:rgba(0,184,148,0.3);color:${colorRevealed};">${esc(word)}</span>`;
       } else if (isParenWord) {
-        return `<span class="word" style="color:var(--text-dim);opacity:0.6;font-style:italic;">${esc(word)}</span>`;
+        return `<span class="word" style="color:${colorBacking};opacity:${alphaBacking};font-style:italic;">${esc(word)}</span>`;
       } else {
-        const cls = (!state.is_muted && i === highlightIdx) ? 'highlighted' : '';
-        return `<span class="word ${cls}">${esc(word)}</span>`;
+        const color = (!state.is_muted && i === highlightIdx) ? colorHighlight : colorBase;
+        const scale = (!state.is_muted && i === highlightIdx) ? 'transform:scale(1.1);' : '';
+        return `<span class="word" style="color:${color};${scale}">${esc(word)}</span>`;
       }
     }).join(' ');
 
