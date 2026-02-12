@@ -1351,8 +1351,8 @@
     <div class="modal-match-count" id="partyMatchCount"></div>
 
     <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closePartyModal()">Annuler</button>
-      <button class="btn btn-primary" id="btnStartParty" onclick="startParty()">🎮 Lancer la partie</button>
+      <button class="btn btn-secondary" onclick="closePartyModal()" title="Annuler et revenir à la régie">Annuler</button>
+      <button class="btn btn-primary" id="btnStartParty" onclick="startParty()" title="Démarrer la partie avec les filtres sélectionnés">🎮 Lancer la partie</button>
     </div>
   </div>
 </div>
@@ -1367,8 +1367,8 @@
       <div class="big-score" id="partyFinalScore">0</div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closePartyResults()">Fermer</button>
-      <button class="btn btn-primary" onclick="closePartyResults(); openPartyModal();">🎮 Rejouer</button>
+      <button class="btn btn-secondary" onclick="closePartyResults()" title="Fermer les résultats">Fermer</button>
+      <button class="btn btn-primary" onclick="closePartyResults(); openPartyModal();" title="Lancer une nouvelle partie">🎮 Rejouer</button>
     </div>
   </div>
 </div>
@@ -1383,7 +1383,7 @@
   <!-- Top Bar -->
   <div class="top-bar-app">
     <div class="top-bar-left">
-      <button class="topbar-btn accent" onclick="toggleDrawer()">📚 Bibliothèque</button>
+      <button class="topbar-btn accent" onclick="toggleDrawer()" title="Ouvrir la bibliothèque de chansons">📚 Bibliothèque</button>
     </div>
     <div class="top-bar-center">
       <div class="header">
@@ -1391,13 +1391,13 @@
       </div>
     </div>
     <div class="top-bar-right">
-      <div class="room-badge" id="roomBadge" onclick="copyOverlayUrl()" title="Copier URL overlay" style="font-size:0.72rem;padding:5px 10px;">
+      <div class="room-badge" id="roomBadge" onclick="copyOverlayUrl()" title="Cliquer pour copier l'URL overlay OBS" style="font-size:0.72rem;padding:5px 10px;">
         <span id="roomDisplay">—</span>
       </div>
       <span id="copyMsg" style="color:var(--success);font-size:0.65rem;opacity:0;transition:opacity 0.3s;">✓</span>
-      <button class="topbar-btn" onclick="document.getElementById('subtitleSettingsModal').classList.remove('hidden')">🎨</button>
-      <button class="topbar-btn" onclick="document.getElementById('obsModal').classList.remove('hidden')">📡</button>
-      <button class="topbar-btn" onclick="document.getElementById('guideModal').classList.remove('hidden')">📖</button>
+      <button class="topbar-btn" onclick="document.getElementById('subtitleSettingsModal').classList.remove('hidden')" title="Personnaliser les couleurs et la taille des sous-titres">🎨</button>
+      <button class="topbar-btn" onclick="document.getElementById('obsModal').classList.remove('hidden')" title="Configurer l'overlay pour OBS (streaming)">📡</button>
+      <button class="topbar-btn" onclick="document.getElementById('guideModal').classList.remove('hidden')" title="Guide rapide et tutoriel des boutons">📖</button>
     </div>
   </div>
 
@@ -1405,7 +1405,7 @@
   <div class="party-hud" id="partyHud">
     <span class="party-info" id="partyInfo">🎮 Chanson 1/5</span>
     <span class="party-score" id="partyTotalDisplay">Score: 0</span>
-    <button class="btn-sm" onclick="endParty()">✕ Arrêter</button>
+    <button class="btn-sm" onclick="endParty()" title="Arrêter la partie en cours et voir les résultats">✕ Arrêter</button>
   </div>
 
   <!-- Main Stage -->
@@ -1442,9 +1442,9 @@
 
         <!-- Side Controls -->
         <div class="video-controls-side">
-          <button class="btn btn-primary" id="btnPlay" onclick="togglePlay()" disabled>▶ Jouer</button>
-          <button class="btn btn-success" id="btnReveal" onclick="revealNext()" disabled>👁 Révéler</button>
-          <button class="btn btn-secondary" onclick="resetGame()">↺ Reset</button>
+          <button class="btn btn-primary" id="btnPlay" onclick="togglePlay()" disabled title="Lancer ou mettre en pause la lecture de la chanson">▶ Jouer</button>
+          <button class="btn btn-success" id="btnReveal" onclick="revealNext()" disabled title="Révéler le prochain mot caché (quand le son est coupé)">👁 Révéler</button>
+          <button class="btn btn-secondary" onclick="resetGame()" title="Remettre la chanson à zéro (score, mots trouvés, position)">↺ Reset</button>
         </div>
       </div>
 
@@ -1460,10 +1460,10 @@
 
       <!-- Volume -->
       <div class="volume-control" style="margin:4px 0;padding:6px 12px;">
-        <span class="vol-icon" id="volIcon" onclick="toggleMuteManual()">🔊</span>
-        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80" oninput="setVolume(this.value)">
+        <span class="vol-icon" id="volIcon" onclick="toggleMuteManual()" title="Couper / remettre le son manuellement">🔊</span>
+        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80" oninput="setVolume(this.value)" title="Régler le volume de la vidéo">
         <span class="volume-pct" id="volumePct">80%</span>
-        <label class="sound-mode-label" style="margin-left:12px;font-size:0.72rem;">
+        <label class="sound-mode-label" style="margin-left:12px;font-size:0.72rem;" title="Si activé, le son revient automatiquement quand tous les mots d'une fenêtre sont trouvés">
           <input type="checkbox" id="soundModeCheck" onchange="toggleSoundMode()" checked>
           🔊 Reprise auto
         </label>
@@ -1478,7 +1478,7 @@
           <input type="text" class="guess-input" id="guessInput"
                  placeholder="Tapez un ou plusieurs mots..."
                  onkeydown="if(event.key==='Enter') checkGuess()" autocomplete="off">
-          <button class="btn btn-primary" onclick="checkGuess()">OK</button>
+          <button class="btn btn-primary" onclick="checkGuess()" title="Valider votre réponse (ou appuyez Entrée)">OK</button>
         </div>
         <div class="guess-feedback" id="guessFeedback"></div>
         <div style="margin-top:6px;font-size:0.72rem;color:var(--text-dim)">
@@ -1509,10 +1509,10 @@
   <div class="drawer-header">
     <h3>📚 Bibliothèque</h3>
     <div style="display:flex;align-items:center;gap:6px;">
-      <button class="btn-sm party" onclick="openPartyModal()">🎮 Partie</button>
-      <button class="btn-sm random" onclick="pickRandom()">🎲</button>
-      <button class="btn-sm refresh" onclick="refreshLibrary()">↻</button>
-      <button class="drawer-close-btn" onclick="toggleDrawer()">✕</button>
+      <button class="btn-sm party" onclick="openPartyModal()" title="Lancer une partie multi-chansons avec filtres et score cumulé">🎮 Partie</button>
+      <button class="btn-sm random" onclick="pickRandom()" title="Sélectionner une chanson au hasard dans la bibliothèque">🎲</button>
+      <button class="btn-sm refresh" onclick="refreshLibrary()" title="Recharger la liste des chansons depuis le serveur">↻</button>
+      <button class="drawer-close-btn" onclick="toggleDrawer()" title="Fermer la bibliothèque">✕</button>
     </div>
   </div>
   <div class="drawer-body">
@@ -1524,7 +1524,7 @@
   <div class="drawer-footer">
     <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--text-dim);">
       Par page :
-      <select id="pageSize" onchange="changePageSize()">
+      <select id="pageSize" onchange="changePageSize()" title="Nombre de chansons affichées par page">
         <option value="10">10</option>
         <option value="20" selected>20</option>
         <option value="50">50</option>
@@ -1580,8 +1580,8 @@
     </div>
 
     <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="resetSubSettings()">↺ Réinitialiser</button>
-      <button class="btn btn-primary" onclick="document.getElementById('subtitleSettingsModal').classList.add('hidden')">Fermer</button>
+      <button class="btn btn-secondary" onclick="resetSubSettings()" title="Remettre les couleurs et taille par défaut">↺ Réinitialiser</button>
+      <button class="btn btn-primary" onclick="document.getElementById('subtitleSettingsModal').classList.add('hidden')" title="Fermer et garder les réglages">Fermer</button>
     </div>
   </div>
 </div>
@@ -1611,24 +1611,51 @@
 
 <!-- Guide Modal -->
 <div class="modal-overlay hidden" id="guideModal">
-  <div class="modal-box">
+  <div class="modal-box" style="max-width:560px;">
     <h2>📖 Guide rapide</h2>
+
+    <h3 style="font-size:0.85rem;color:var(--accent);margin:14px 0 8px;">🎯 Barre du haut</h3>
+    <p><strong>📚 Bibliothèque</strong> — Ouvre le panneau latéral avec toutes vos chansons. Recherchez par titre, artiste ou tag, et sélectionnez une chanson pour la charger.</p>
+    <p style="margin-top:6px;"><strong>🎨 Sous-titres</strong> — Personnalisez les couleurs du texte, des mots trouvés, des chœurs, la taille de police et le fond. Les changements s'appliquent aussi à l'overlay OBS.</p>
+    <p style="margin-top:6px;"><strong>📡 OBS</strong> — Affiche l'URL de votre overlay à ajouter comme Source Navigateur dans OBS pour le streaming.</p>
+    <p style="margin-top:6px;"><strong>📖 Guide</strong> — Vous êtes ici !</p>
+    <p style="margin-top:6px;"><strong>Badge Room</strong> — Cliquez dessus pour copier l'URL overlay dans le presse-papier.</p>
+
+    <h3 style="font-size:0.85rem;color:var(--accent);margin:14px 0 8px;">🎬 Contrôles vidéo</h3>
+    <p><strong>▶ Jouer / ⏸ Pause</strong> — Lance ou met en pause la lecture. Quand la vidéo atteint une fenêtre de coupure, le son se coupe automatiquement et c'est à vous de deviner !</p>
+    <p style="margin-top:6px;"><strong>👁 Révéler</strong> — Dévoile le prochain mot caché de la fenêtre en cours. Actif uniquement quand le son est coupé et la vidéo en pause.</p>
+    <p style="margin-top:6px;"><strong>↺ Reset</strong> — Remet la chanson à zéro : score, mots trouvés, position de lecture. La chanson reste sélectionnée.</p>
+    <p style="margin-top:6px;"><strong>🔊 Volume</strong> — Réglez le volume avec le curseur. Cliquez sur l'icône pour couper/remettre le son manuellement.</p>
+    <p style="margin-top:6px;"><strong>🔊 Reprise auto</strong> — Si coché, le son revient automatiquement quand tous les mots d'une fenêtre sont trouvés.</p>
+
+    <h3 style="font-size:0.85rem;color:var(--accent);margin:14px 0 8px;">🎤 Zone de devinette</h3>
+    <p><strong>Champ de texte</strong> — Tapez un ou plusieurs mots et appuyez sur Entrée ou cliquez OK. Les mots correspondants seront révélés. Vous pouvez taper une phrase entière !</p>
+
+    <h3 style="font-size:0.85rem;color:var(--accent);margin:14px 0 8px;">📚 Bibliothèque</h3>
+    <p><strong>🎮 Partie</strong> — Lance une partie multi-chansons. Choisissez le nombre de chansons et filtrez par difficulté, artiste ou tags. Le score est cumulé sur toute la partie.</p>
+    <p style="margin-top:6px;"><strong>🎲 Au hasard</strong> — Sélectionne et charge une chanson aléatoire de la bibliothèque.</p>
+    <p style="margin-top:6px;"><strong>↻ Rafraîchir</strong> — Recharge la liste des chansons depuis le serveur (utile si vous venez d'en ajouter).</p>
+    <p style="margin-top:6px;"><strong>🔍 Recherche</strong> — Filtrez par titre, artiste ou tags.</p>
+    <p style="margin-top:6px;"><strong>Pagination</strong> — Naviguez entre les pages et choisissez le nombre de chansons par page en bas du panneau.</p>
+
+    <h3 style="font-size:0.85rem;color:var(--accent);margin:14px 0 8px;">⚙️ Configuration des chansons</h3>
     <p>
-      Placez vos chansons dans <kbd>videos/</kbd>. Chaque sous-dossier = 1 chanson avec un <kbd>.srt</kbd>.
-      Ajoutez <kbd>config.json</kbd> pour titre, artiste, difficulté, tags et coupure.
+      Placez vos chansons dans <kbd>videos/</kbd>. Chaque sous-dossier = 1 chanson avec un fichier <kbd>.srt</kbd>.
+      Ajoutez un <kbd>config.json</kbd> optionnel :
     </p>
-    <p style="margin-top:10px;">
-      Whisper : <kbd>whisper video.mp4 --language fr --output_format srt</kbd>
+    <pre style="background:#1a1a2e;padding:10px;border-radius:8px;font-size:0.75rem;margin-top:8px;overflow-x:auto;color:var(--text-dim);">{
+  "title": "Ma chanson",
+  "artist": "Artiste",
+  "difficulty": "easy|medium|hard",
+  "tags": ["pop", "français"],
+  "cutoff_windows": [[65, 95]],
+  "subtitle_offset": -0.3
+}</pre>
+    <p style="margin-top:8px;">
+      <strong>Whisper :</strong> <kbd>whisper video.mp4 --language fr --output_format srt</kbd><br>
+      <strong>Chœurs :</strong> mots entre parenthèses dans le SRT → affichés mais pas à deviner.
     </p>
-    <p style="margin-top:10px;">
-      <strong>Calage :</strong> <kbd>"subtitle_offset": -0.3</kbd> (avance 300ms)
-    </p>
-    <p style="margin-top:10px;">
-      <strong>Tags :</strong> <kbd>"tags": ["pop", "français"]</kbd>
-    </p>
-    <p style="margin-top:10px;">
-      <strong>Chœurs :</strong> Parenthèses dans le SRT → affichés mais pas à deviner.
-    </p>
+
     <div class="modal-actions" style="margin-top:16px;">
       <button class="btn btn-secondary" onclick="document.getElementById('guideModal').classList.add('hidden')">Fermer</button>
     </div>
