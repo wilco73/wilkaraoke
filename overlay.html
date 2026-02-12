@@ -113,6 +113,50 @@
 
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
 
+  /* ---- Party badge ---- */
+  .party-badge {
+    background: rgba(108, 92, 231, 0.5);
+    backdrop-filter: blur(12px);
+    color: #d4cfff;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    border: 1px solid rgba(108, 92, 231, 0.6);
+    transition: opacity 0.5s;
+  }
+  .party-badge.hidden { display: none; }
+
+  /* ---- Countdown overlay ---- */
+  .countdown-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  .countdown-overlay.hidden { display: none; }
+  .countdown-number {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 6rem;
+    color: var(--accent);
+    animation: countPulse 1s ease infinite;
+  }
+  .countdown-label {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+    margin-top: 8px;
+    text-align: center;
+  }
+  @keyframes countPulse {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+  }
+
   /* ---- Song info banner ---- */
   .song-banner {
     position: absolute;
@@ -263,9 +307,10 @@
   <!-- Top bar -->
   <div class="top-bar">
     <div class="score-box" id="scoreBox">
-      <div class="label">Score</div>
+      <div class="label" id="scoreLabel">Score</div>
       <div class="value" id="scoreValue">0</div>
     </div>
+    <div class="party-badge hidden" id="partyBadge">🎮 1/5</div>
     <div class="status-badge" id="statusBadge"></div>
   </div>
 
@@ -273,6 +318,12 @@
   <div class="song-banner" id="songBanner">
     <div class="title" id="bannerTitle"></div>
     <div class="artist" id="bannerArtist"></div>
+  </div>
+
+  <!-- Countdown overlay -->
+  <div class="countdown-overlay hidden" id="countdownOverlay">
+    <div class="countdown-number" id="countdownNumber">5</div>
+    <div class="countdown-label" id="countdownLabel">Prochaine chanson...</div>
   </div>
 
   <!-- Subtitles -->
@@ -330,7 +381,7 @@ async function pollState() {
       songData = state;
       loadVideo(state);
       showWaiting(false);
-      showSongBanner(state.song_title, state.song_artist);
+      showSongBanner(state.song_title, state.song_artist, state);
     }
 
     currentState = state;
@@ -386,6 +437,28 @@ function renderOverlay(state) {
   // Score
   document.getElementById('scoreBox').classList.toggle('visible', state.score > 0 || state.is_muted);
   document.getElementById('scoreValue').textContent = state.score || 0;
+
+  // Party mode info
+  const partyBadge = document.getElementById('partyBadge');
+  if (state.party_mode) {
+    partyBadge.classList.remove('hidden');
+    partyBadge.textContent = `🎮 ${state.party_current}/${state.party_total}`;
+    document.getElementById('scoreLabel').textContent = 'Score Partie';
+  } else {
+    partyBadge.classList.add('hidden');
+    document.getElementById('scoreLabel').textContent = 'Score';
+  }
+
+  // Countdown
+  const countdownOverlay = document.getElementById('countdownOverlay');
+  if (state.party_countdown > 0) {
+    countdownOverlay.classList.remove('hidden');
+    document.getElementById('countdownNumber').textContent = state.party_countdown;
+    document.getElementById('countdownLabel').textContent =
+      `${state.song_title || 'Prochaine chanson'}...`;
+  } else {
+    countdownOverlay.classList.add('hidden');
+  }
 
   // Status badge
   const badge = document.getElementById('statusBadge');
@@ -471,9 +544,12 @@ function showWaiting(show) {
 }
 
 let bannerTimeout = null;
-function showSongBanner(title, artist) {
+function showSongBanner(title, artist, state) {
   const banner = document.getElementById('songBanner');
-  document.getElementById('bannerTitle').textContent = `♪ ${title}`;
+  const prefix = (state && state.party_mode)
+    ? `🎮 ${state.party_current}/${state.party_total} — `
+    : '♪ ';
+  document.getElementById('bannerTitle').textContent = `${prefix}${title}`;
   document.getElementById('bannerArtist').textContent = artist;
   banner.classList.add('visible');
 

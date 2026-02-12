@@ -561,11 +561,19 @@
     user-select: none;
   }
   .filter-chip:hover { border-color: #555; color: var(--text); }
-  .filter-chip.selected {
-    background: rgba(108, 92, 231, 0.25);
-    border-color: #6c5ce7;
-    color: #a29bfe;
+  .filter-chip.include {
+    background: rgba(0, 184, 148, 0.2);
+    border-color: var(--success);
+    color: var(--success);
   }
+  .filter-chip.include::before { content: '✓ '; }
+  .filter-chip.exclude {
+    background: rgba(214, 48, 49, 0.2);
+    border-color: var(--danger);
+    color: var(--danger);
+    text-decoration: line-through;
+  }
+  .filter-chip.exclude::before { content: '✕ '; }
 
   .modal-actions {
     display: flex;
@@ -1055,6 +1063,10 @@
     <div class="modal-field">
       <label>Filtrer par difficulté</label>
       <div class="filter-chips" id="difficultyChips"></div>
+      <div style="font-size:0.68rem;color:var(--text-dim);margin-top:6px;">
+        Cliquer : <span style="color:var(--success)">✓ inclure</span> →
+        <span style="color:var(--danger)">✕ exclure</span> → neutre
+      </div>
     </div>
 
     <div class="modal-field">
@@ -1289,6 +1301,7 @@ let partyCurrentIdx = -1;     // which song in the queue
 let partyTotalScore = 0;      // cumulative score across songs
 let partyScores = [];         // per-song scores [{title, artist, score, total}]
 let partyCountdown = null;    // countdown timer
+let partyCountdownValue = 0;  // current countdown value (0 = inactive)
 
 const video = document.getElementById('videoPlayer');
 video.volume = 0.8;
@@ -2173,24 +2186,46 @@ function closePartyModal() {
 }
 
 function toggleChip(el) {
-  el.classList.toggle('selected');
+  // Tri-state: neutral → include → exclude → neutral
+  if (el.classList.contains('exclude')) {
+    el.classList.remove('exclude');
+    // back to neutral
+  } else if (el.classList.contains('include')) {
+    el.classList.remove('include');
+    el.classList.add('exclude');
+  } else {
+    el.classList.add('include');
+  }
   updatePartyPreview();
 }
 
-function getSelectedValues(containerId) {
-  return [...document.querySelectorAll(`#${containerId} .filter-chip.selected`)]
+function getChipValues(containerId) {
+  const include = [...document.querySelectorAll(`#${containerId} .filter-chip.include`)]
     .map(el => el.dataset.value);
+  const exclude = [...document.querySelectorAll(`#${containerId} .filter-chip.exclude`)]
+    .map(el => el.dataset.value);
+  return { include, exclude };
 }
 
 function getFilteredSongs() {
-  const selDiff = getSelectedValues('difficultyChips');
-  const selArtists = getSelectedValues('artistChips');
-  const selTags = getSelectedValues('tagChips');
+  const diff = getChipValues('difficultyChips');
+  const artists = getChipValues('artistChips');
+  const tags = getChipValues('tagChips');
 
   return songs.filter(s => {
-    if (selDiff.length > 0 && !selDiff.includes(s.difficulty)) return false;
-    if (selArtists.length > 0 && !selArtists.includes(s.artist)) return false;
-    if (selTags.length > 0 && !(s.tags || []).some(t => selTags.includes(t))) return false;
+    // Difficulty
+    if (diff.exclude.includes(s.difficulty)) return false;
+    if (diff.include.length > 0 && !diff.include.includes(s.difficulty)) return false;
+
+    // Artists
+    if (artists.exclude.includes(s.artist)) return false;
+    if (artists.include.length > 0 && !artists.include.includes(s.artist)) return false;
+
+    // Tags
+    const songTags = s.tags || [];
+    if (tags.exclude.some(t => songTags.includes(t))) return false;
+    if (tags.include.length > 0 && !tags.include.some(t => songTags.includes(t))) return false;
+
     return true;
   });
 }
@@ -2355,6 +2390,7 @@ function onSongEndedInParty() {
   const labelEl = document.getElementById('countdownLabel');
   overlay.classList.remove('hidden');
   let count = 5;
+  partyCountdownValue = count;
   numEl.textContent = count;
 
   const nextSong = partyQueue[partyCurrentIdx + 1];
@@ -2363,9 +2399,11 @@ function onSongEndedInParty() {
   if (partyCountdown) clearInterval(partyCountdown);
   partyCountdown = setInterval(() => {
     count--;
+    partyCountdownValue = count;
     if (count <= 0) {
       clearInterval(partyCountdown);
       partyCountdown = null;
+      partyCountdownValue = 0;
       overlay.classList.add('hidden');
       partyNextSong();
     } else {
@@ -2431,7 +2469,7 @@ function pushState() {
     is_playing: !video.paused,
     is_muted: isMuted,
     current_time: getCurrentTime(),
-    score: score,
+    score: partyMode ? (partyTotalScore + score) : score,
     revealed_words: Array.from(revealedWords),
     window_idx: currentWindowIdx,
     cutoff_windows: currentSong.cutoff_windows || [],
@@ -2439,6 +2477,11 @@ function pushState() {
     video_url: currentSong.video_url || null,
     duration: currentSong.duration || 0,
     subtitle_offset: currentSong.subtitle_offset || 0,
+    // Party mode info
+    party_mode: partyMode,
+    party_current: partyMode ? (partyCurrentIdx + 1) : 0,
+    party_total: partyMode ? partyQueue.length : 0,
+    party_countdown: partyCountdownValue,  // 0 = no countdown
   };
 
   fetch(`${API}/api/state?room=${encodeURIComponent(currentRoom)}`, {
