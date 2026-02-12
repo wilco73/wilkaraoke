@@ -637,7 +637,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    max-height: 400px;
+    max-height: 85%;
     overflow-y: auto;
     padding-right: 4px;
   }
@@ -1464,7 +1464,7 @@
         <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80" oninput="setVolume(this.value)">
         <span class="volume-pct" id="volumePct">80%</span>
         <label class="sound-mode-label" style="margin-left:12px;font-size:0.72rem;">
-          <input type="checkbox" id="soundModeCheck" onchange="toggleSoundMode()">
+          <input type="checkbox" id="soundModeCheck" onchange="toggleSoundMode()" checked>
           🔊 Reprise auto
         </label>
       </div>
