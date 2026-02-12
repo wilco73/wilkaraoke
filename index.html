@@ -43,10 +43,152 @@
   }
 
   .app {
-    max-width: 960px;
+    max-width: 100%;
     margin: 0 auto;
     padding: 20px;
   }
+
+  /* ---- Desktop layout: video+guess side by side ---- */
+  .main-stage {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .stage-left { flex: 1; min-width: 0; }
+  .stage-right {
+    width: 340px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  @media (max-width: 1100px) {
+    .main-stage { flex-direction: column; }
+    .stage-right { width: 100%; }
+  }
+
+  /* ---- Library Drawer ---- */
+  .drawer-toggle {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 900;
+    background: linear-gradient(135deg, var(--accent), #e0a020);
+    color: #1a1a1a;
+    border: none;
+    border-radius: 0 12px 12px 0;
+    padding: 14px 8px 14px 6px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+    letter-spacing: 2px;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.3);
+    transition: left 0.3s;
+  }
+  .drawer-toggle:hover { padding-right: 12px; }
+  .drawer-open .drawer-toggle { left: 420px; }
+
+  @media (max-width: 600px) {
+    .drawer-open .drawer-toggle { left: calc(100vw - 40px); }
+  }
+
+  .library-drawer {
+    position: fixed;
+    left: -440px;
+    top: 0; bottom: 0;
+    width: 420px;
+    max-width: calc(100vw - 40px);
+    background: var(--bg-card);
+    border-right: 1px solid #222244;
+    z-index: 899;
+    display: flex;
+    flex-direction: column;
+    transition: left 0.3s ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+  }
+  .drawer-open .library-drawer { left: 0; }
+
+  .library-drawer .drawer-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #222244;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .library-drawer .drawer-header h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+  }
+
+  .library-drawer .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 20px;
+  }
+
+  .library-drawer .drawer-footer {
+    padding: 10px 20px;
+    border-top: 1px solid #222244;
+    flex-shrink: 0;
+  }
+
+  /* Pagination */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 0.78rem;
+  }
+  .pagination button {
+    background: #2a2a4a;
+    border: 1px solid #333;
+    color: var(--text);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  .pagination button:disabled { opacity: 0.3; cursor: default; }
+  .pagination button:hover:not(:disabled) { background: #3a3a5a; }
+  .pagination .page-info { color: var(--text-dim); }
+  .pagination select {
+    background: #2a2a4a;
+    border: 1px solid #333;
+    color: var(--text);
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+  }
+
+  /* ---- Help buttons bar ---- */
+  .help-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 12px 0;
+  }
+  .help-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 8px 16px;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .help-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
 
   /* ---- Header ---- */
   .header {
@@ -157,13 +299,13 @@
   }
 
   .word.revealed {
-    background: rgba(0, 184, 148, 0.3);
+    background: var(--sub-bg-revealed, rgba(0, 184, 148, 0.3));
     color: var(--sub-color-revealed, var(--success));
     animation: revealPop 0.4s ease;
   }
 
   .word.revealed-static {
-    background: rgba(0, 184, 148, 0.25);
+    background: var(--sub-bg-revealed, rgba(0, 184, 148, 0.25));
     color: var(--sub-color-revealed, var(--success));
   }
 
@@ -1219,110 +1361,105 @@
     <button class="btn-sm" onclick="endParty()">✕ Arrêter</button>
   </div>
 
-  <!-- Video Stage -->
-  <div class="video-stage" id="videoStage">
-    <video id="videoPlayer" playsinline crossorigin="anonymous"></video>
+  <!-- Main Stage: Video + Guess side by side on desktop -->
+  <div class="main-stage">
+    <div class="stage-left">
+      <!-- Video Stage -->
+      <div class="video-stage" id="videoStage">
+        <video id="videoPlayer" playsinline crossorigin="anonymous"></video>
 
-    <!-- Countdown overlay -->
-    <div class="countdown-overlay hidden" id="countdownOverlay">
-      <div class="countdown-number" id="countdownNumber">5</div>
-      <div class="countdown-label" id="countdownLabel">Prochaine chanson...</div>
-    </div>
+        <div class="countdown-overlay hidden" id="countdownOverlay">
+          <div class="countdown-number" id="countdownNumber">5</div>
+          <div class="countdown-label" id="countdownLabel">Prochaine chanson...</div>
+        </div>
 
-    <div class="placeholder" id="placeholder">
-      <div class="icon">🎬</div>
-      <div class="msg">Sélectionnez une chanson pour commencer</div>
-    </div>
+        <div class="placeholder" id="placeholder">
+          <div class="icon">🎬</div>
+          <div class="msg">Sélectionnez une chanson pour commencer</div>
+        </div>
 
-    <div class="score-display" style="display:none" id="scoreBox">
-      <div class="label">Score</div>
-      <div class="value" id="scoreValue">0</div>
-    </div>
+        <div class="score-display" style="display:none" id="scoreBox">
+          <div class="label">Score</div>
+          <div class="value" id="scoreValue">0</div>
+        </div>
 
-    <div class="status-bar">
-      <div class="status-pill paused" id="statusPill">⏸ En attente</div>
-    </div>
+        <div class="status-bar">
+          <div class="status-pill paused" id="statusPill">⏸ En attente</div>
+        </div>
 
-    <div class="subtitle-overlay">
-      <div class="subtitle-text" id="subtitleText"></div>
-    </div>
-  </div>
+        <div class="subtitle-overlay">
+          <div class="subtitle-text" id="subtitleText"></div>
+        </div>
+      </div>
 
-  <!-- Progress -->
-  <div class="progress-container" id="progressContainer">
-    <div id="cutoffMarkers"></div>
-    <div class="progress-bar" id="progressBar"></div>
-  </div>
-  <div class="time-display">
-    <span><span id="currentTime">0:00</span> / <span id="totalTime">0:00</span></span>
-    <span id="cutoffInfo" style="color: var(--danger);"></span>
-  </div>
+      <!-- Progress -->
+      <div class="progress-container" id="progressContainer">
+        <div id="cutoffMarkers"></div>
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="time-display">
+        <span><span id="currentTime">0:00</span> / <span id="totalTime">0:00</span></span>
+        <span id="cutoffInfo" style="color: var(--danger);"></span>
+      </div>
 
-  <!-- Volume -->
-  <div class="volume-control">
-    <span class="vol-icon" id="volIcon" onclick="toggleMuteManual()">🔊</span>
-    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80" oninput="setVolume(this.value)">
-    <span class="volume-pct" id="volumePct">80%</span>
-  </div>
+      <!-- Volume + Controls -->
+      <div class="volume-control">
+        <span class="vol-icon" id="volIcon" onclick="toggleMuteManual()">🔊</span>
+        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80" oninput="setVolume(this.value)">
+        <span class="volume-pct" id="volumePct">80%</span>
+      </div>
 
-  <!-- Controls -->
-  <div class="controls">
-    <button class="btn btn-primary" id="btnPlay" onclick="togglePlay()" disabled>▶ Jouer</button>
-    <button class="btn btn-success" id="btnReveal" onclick="revealNext()" disabled>👁 Révéler</button>
-    <button class="btn btn-secondary" onclick="resetGame()">↺ Reset</button>
-  </div>
+      <div class="controls">
+        <button class="btn btn-primary" id="btnPlay" onclick="togglePlay()" disabled>▶ Jouer</button>
+        <button class="btn btn-success" id="btnReveal" onclick="revealNext()" disabled>👁 Révéler</button>
+        <button class="btn btn-secondary" onclick="resetGame()">↺ Reset</button>
+      </div>
 
-  <!-- Sound mode option -->
-  <div class="sound-mode-option" id="soundModeOption">
-    <label class="sound-mode-label">
-      <input type="checkbox" id="soundModeCheck" onchange="toggleSoundMode()">
-      <span class="checkmark"></span>
-      🔊 Rejouer le son après avoir trouvé tous les mots
-    </label>
-  </div>
-
-  <!-- Guess Area -->
-  <div class="guess-area" id="guessArea">
-    <h3>🎤 Devinez les paroles</h3>
-    <div class="guess-input-row">
-      <input type="text" class="guess-input" id="guessInput"
-             placeholder="Tapez un ou plusieurs mots..."
-             onkeydown="if(event.key==='Enter') checkGuess()" autocomplete="off">
-      <button class="btn btn-primary" onclick="checkGuess()">OK</button>
-    </div>
-    <div class="guess-feedback" id="guessFeedback"></div>
-    <div style="margin-top:8px;font-size:0.78rem;color:var(--text-dim)">
-      💡 Vous pouvez taper plusieurs mots ou une phrase entière. Appuyez sur ▶ pour continuer la musique.
-    </div>
-  </div>
-
-  <!-- Window Progress -->
-  <div class="window-progress" id="windowProgress">
-    <div class="window-progress-header">
-      <span class="wp-label" id="wpLabel">Fenêtre 1/1</span>
-      <span class="wp-count" id="wpCount">0 / 0 mots</span>
-    </div>
-    <div class="wp-bar-container">
-      <div class="wp-bar-fill" id="wpBarFill" style="width:0%"></div>
-    </div>
-    <div class="window-complete-msg" id="wpComplete">
-      ✅ Fenêtre complète ! Appuyez sur ▶ Reprendre pour continuer
-    </div>
-  </div>
-
-  <!-- Library -->
-  <div class="library">
-    <div class="library-header">
-      <h3>📚 Bibliothèque</h3>
-      <div class="library-actions">
-        <button class="btn-sm party" onclick="openPartyModal()">🎮 Partie</button>
-        <button class="btn-sm random" onclick="pickRandom()">🎲 Au hasard</button>
-        <button class="btn-sm refresh" onclick="refreshLibrary()">↻ Rafraîchir</button>
+      <div class="sound-mode-option" id="soundModeOption">
+        <label class="sound-mode-label">
+          <input type="checkbox" id="soundModeCheck" onchange="toggleSoundMode()">
+          <span class="checkmark"></span>
+          🔊 Rejouer le son après avoir trouvé tous les mots
+        </label>
       </div>
     </div>
-    <div class="song-count" id="songCount"></div>
-    <input type="text" class="search-box" id="searchBox" placeholder="🔍 Rechercher une chanson, artiste ou tag..." oninput="filterSongs()">
-    <div class="song-list" id="songList"></div>
+
+    <div class="stage-right">
+      <!-- Guess Area -->
+      <div class="guess-area" id="guessArea">
+        <h3>🎤 Devinez les paroles</h3>
+        <div class="guess-input-row">
+          <input type="text" class="guess-input" id="guessInput"
+                 placeholder="Tapez un ou plusieurs mots..."
+                 onkeydown="if(event.key==='Enter') checkGuess()" autocomplete="off">
+          <button class="btn btn-primary" onclick="checkGuess()">OK</button>
+        </div>
+        <div class="guess-feedback" id="guessFeedback"></div>
+        <div style="margin-top:8px;font-size:0.78rem;color:var(--text-dim)">
+          💡 Tapez plusieurs mots ou une phrase. Appuyez sur ▶ pour continuer.
+        </div>
+      </div>
+
+      <!-- Window Progress -->
+      <div class="window-progress" id="windowProgress">
+        <div class="window-progress-header">
+          <span class="wp-label" id="wpLabel">Fenêtre 1/1</span>
+          <span class="wp-count" id="wpCount">0 / 0 mots</span>
+        </div>
+        <div class="wp-bar-container">
+          <div class="wp-bar-fill" id="wpBarFill" style="width:0%"></div>
+        </div>
+        <div class="window-complete-msg" id="wpComplete">
+          ✅ Fenêtre complète ! Appuyez sur ▶ Reprendre pour continuer
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Buttons -->
+  <div class="help-buttons">
+    <button class="help-btn" onclick="document.getElementById('obsModal').classList.remove('hidden')">📡 Config OBS</button>
+    <button class="help-btn" onclick="document.getElementById('guideModal').classList.remove('hidden')">📖 Guide rapide</button>
   </div>
 
   <!-- Subtitle Settings -->
@@ -1346,6 +1483,13 @@
       <div class="setting-row">
         <label>Mot trouvé</label>
         <input type="color" id="subColorRevealed" value="#00b894" oninput="updateSubSettings()">
+      </div>
+
+      <div class="setting-row">
+        <label>Fond mot trouvé</label>
+        <input type="color" id="subBgRevealed" value="#00b894" oninput="updateSubSettings()">
+        <input type="range" id="subBgRevealedAlpha" min="0" max="100" value="25" oninput="updateSubSettings()">
+        <span class="range-value" id="subBgRevealedAlphaVal">25%</span>
       </div>
 
       <div class="setting-row">
@@ -1377,46 +1521,89 @@
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Info -->
-  <div class="info-panel">
-    <h3>📡 Mode Stream (OBS)</h3>
-    <p>
-      Cette page est la <strong>régie</strong> — vous contrôlez tout depuis ici.
+<!-- Library Drawer -->
+<button class="drawer-toggle" id="drawerToggle" onclick="toggleDrawer()">📚</button>
+
+<div class="library-drawer" id="libraryDrawer">
+  <div class="drawer-header">
+    <h3>📚 Bibliothèque</h3>
+    <div class="library-actions">
+      <button class="btn-sm party" onclick="openPartyModal()">🎮 Partie</button>
+      <button class="btn-sm random" onclick="pickRandom()">🎲</button>
+      <button class="btn-sm refresh" onclick="refreshLibrary()">↻</button>
+    </div>
+  </div>
+  <div class="drawer-body">
+    <div class="song-count" id="songCount"></div>
+    <input type="text" class="search-box" id="searchBox" placeholder="🔍 Rechercher..." oninput="filterSongs()">
+    <div class="song-list" id="songList"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+  <div class="drawer-footer">
+    <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--text-dim);">
+      Par page :
+      <select id="pageSize" onchange="changePageSize()">
+        <option value="10">10</option>
+        <option value="20" selected>20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- OBS Modal -->
+<div class="modal-overlay hidden" id="obsModal">
+  <div class="modal-box">
+    <h2>📡 Configuration OBS</h2>
+    <p style="margin-bottom:12px;">
       Pour afficher dans OBS, ajoutez une <strong>Source Navigateur</strong> avec l'URL overlay
-      (cliquez sur le badge room ci-dessus pour copier).
+      (cliquez sur le badge room pour copier).
     </p>
     <p>
       <kbd id="overlayUrl" style="cursor:pointer;display:inline-block;padding:6px 12px;font-size:0.85rem;" onclick="copyOverlayUrl()" title="Cliquer pour copier">
         chargement...
       </kbd>
     </p>
-    <p>
+    <p style="margin-top:12px;">
       L'overlay est transparent, sans contrôles — juste la vidéo, les sous-titres et le score.
       Taille recommandée : <kbd>1280×720</kbd>.
       Votre URL overlay est <strong>permanente</strong> tant que vous gardez le même nom de room.
     </p>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-secondary" onclick="document.getElementById('obsModal').classList.add('hidden')">Fermer</button>
+    </div>
   </div>
+</div>
 
-  <div class="info-panel">
-    <h3>Guide rapide</h3>
+<!-- Guide Modal -->
+<div class="modal-overlay hidden" id="guideModal">
+  <div class="modal-box">
+    <h2>📖 Guide rapide</h2>
     <p>
       Placez vos chansons dans le dossier <kbd>videos/</kbd> à côté de <kbd>server.py</kbd>.
-      Chaque chanson doit avoir son propre sous-dossier avec au minimum un fichier <kbd>.srt</kbd>
-      (sous-titres). Ajoutez un <kbd>config.json</kbd> pour personnaliser le titre, artiste, difficulté et point de coupure.
+      Chaque chanson doit avoir son propre sous-dossier avec un fichier <kbd>.srt</kbd>.
+      Ajoutez un <kbd>config.json</kbd> pour personnaliser titre, artiste, difficulté, tags et coupure.
     </p>
-    <p>
-      Pour générer les sous-titres automatiquement avec Whisper :<br>
+    <p style="margin-top:10px;">
+      Pour générer les sous-titres avec Whisper :<br>
       <kbd>whisper video.mp4 --language fr --output_format srt</kbd>
     </p>
-    <p>
-      <strong>Calage des paroles :</strong> si les sous-titres sont décalés par rapport à la voix,
-      ajoutez <kbd>"subtitle_offset"</kbd> dans config.json. Valeur en secondes :
-      <kbd>-0.3</kbd> = avance de 300ms, <kbd>0.5</kbd> = retarde de 500ms.
+    <p style="margin-top:10px;">
+      <strong>Calage des paroles :</strong> ajoutez <kbd>"subtitle_offset"</kbd> dans config.json.
+      <kbd>-0.3</kbd> = avance 300ms, <kbd>0.5</kbd> = retarde 500ms.
     </p>
-    <p>
-      Les fenêtres de coupure acceptent les décimales : <kbd>[65.5, 95.2]</kbd>.
+    <p style="margin-top:10px;">
+      <strong>Tags :</strong> <kbd>"tags": ["pop", "français", "duos"]</kbd> — utilisables dans les filtres de partie et la recherche.
     </p>
+    <p style="margin-top:10px;">
+      <strong>Chœurs :</strong> Mettez les paroles du chœur entre parenthèses dans le SRT — elles seront affichées mais pas à deviner.
+    </p>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-secondary" onclick="document.getElementById('guideModal').classList.add('hidden')">Fermer</button>
+    </div>
   </div>
 </div>
 
@@ -1438,6 +1625,15 @@ let savedVolume = 0.8;     // remember volume before game mute
 let lastSubtitleHtml = '';  // track last rendered HTML to avoid flickering
 let lastLineIdx = -1;       // track current line to detect changes
 let replayAfterComplete = false; // sound mode: replay sound after all words found
+
+// Pagination
+let currentPage = 1;
+let pageSize = 20;
+let filteredSongs = [];
+
+function toggleDrawer() {
+  document.body.classList.toggle('drawer-open');
+}
 
 // Party mode state
 let partyMode = false;
@@ -1511,6 +1707,7 @@ async function refreshLibrary() {
 // UI RENDERING
 // ============================================================
 function renderSongList(list) {
+  filteredSongs = list;
   const container = document.getElementById('songList');
   document.getElementById('songCount').textContent = `${list.length} chanson${list.length > 1 ? 's' : ''} disponible${list.length > 1 ? 's' : ''}`;
 
@@ -1519,20 +1716,20 @@ function renderSongList(list) {
       <div class="empty-state">
         <div class="icon">📁</div>
         <h3>Aucune chanson trouvée</h3>
-        <p>Ajoutez des chansons dans le dossier <strong>videos/</strong> avec cette structure :</p>
-        <code>
-          videos/<br>
-          &nbsp;&nbsp;ma-chanson/<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;video.mp4<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;subtitles.srt<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;config.json <span style="color:var(--text-dim)">(optionnel)</span>
-        </code>
-        <p>Puis cliquez sur <strong>↻ Rafraîchir</strong></p>
+        <p>Ajoutez des chansons ou changez vos filtres</p>
       </div>`;
+    document.getElementById('pagination').innerHTML = '';
     return;
   }
 
-  container.innerHTML = list.map(song => {
+  // Pagination
+  const totalPages = Math.ceil(list.length / pageSize);
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * pageSize;
+  const end = Math.min(start + pageSize, list.length);
+  const page = list.slice(start, end);
+
+  container.innerHTML = page.map(song => {
     const diffLabel = {easy:'Facile', medium:'Moyen', hard:'Difficile'}[song.difficulty] || 'Moyen';
     const isActive = currentSong && currentSong.id === song.id;
     const duration = formatTime(song.duration);
@@ -1554,9 +1751,35 @@ function renderSongList(list) {
         </div>
       </div>`;
   }).join('');
+
+  // Pagination controls
+  const pagEl = document.getElementById('pagination');
+  if (totalPages <= 1) {
+    pagEl.innerHTML = '';
+  } else {
+    pagEl.innerHTML = `
+      <button onclick="goPage(1)" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>
+      <button onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&lsaquo;</button>
+      <span class="page-info">${currentPage} / ${totalPages}</span>
+      <button onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>&rsaquo;</button>
+      <button onclick="goPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>&raquo;</button>
+    `;
+  }
+}
+
+function goPage(n) {
+  currentPage = n;
+  renderSongList(filteredSongs);
+}
+
+function changePageSize() {
+  pageSize = parseInt(document.getElementById('pageSize').value);
+  currentPage = 1;
+  renderSongList(filteredSongs);
 }
 
 function filterSongs() {
+  currentPage = 1;
   const q = document.getElementById('searchBox').value.toLowerCase().trim();
   if (!q) {
     renderSongList(songs);
@@ -1853,6 +2076,8 @@ const SUB_DEFAULTS = {
   colorBase: '#f0f0f0',
   colorHighlight: '#f7b731',
   colorRevealed: '#00b894',
+  bgRevealed: '#00b894',
+  bgRevealedAlpha: 25,
   colorBacking: '#8888aa',
   alphaBacking: 60,
   bgColor: '#000000',
@@ -1873,6 +2098,8 @@ function updateSubSettings() {
   subSettings.colorBase = document.getElementById('subColorBase').value;
   subSettings.colorHighlight = document.getElementById('subColorHighlight').value;
   subSettings.colorRevealed = document.getElementById('subColorRevealed').value;
+  subSettings.bgRevealed = document.getElementById('subBgRevealed').value;
+  subSettings.bgRevealedAlpha = parseInt(document.getElementById('subBgRevealedAlpha').value);
   subSettings.colorBacking = document.getElementById('subColorBacking').value;
   subSettings.alphaBacking = parseInt(document.getElementById('subAlphaBacking').value);
   subSettings.bgColor = document.getElementById('subBgColor').value;
@@ -1882,6 +2109,7 @@ function updateSubSettings() {
   // Update display values
   document.getElementById('subAlphaBackingVal').textContent = `${subSettings.alphaBacking}%`;
   document.getElementById('subBgAlphaVal').textContent = `${subSettings.bgAlpha}%`;
+  document.getElementById('subBgRevealedAlphaVal').textContent = `${subSettings.bgRevealedAlpha}%`;
   document.getElementById('subFontSizeVal').textContent = `${subSettings.fontSize}px`;
 
   applySubSettings();
@@ -1894,6 +2122,7 @@ function applySubSettings() {
   root.setProperty('--sub-color-base', subSettings.colorBase);
   root.setProperty('--sub-color-highlight', subSettings.colorHighlight);
   root.setProperty('--sub-color-revealed', subSettings.colorRevealed);
+  root.setProperty('--sub-bg-revealed', hexToRgba(subSettings.bgRevealed, subSettings.bgRevealedAlpha / 100));
   root.setProperty('--sub-color-backing', subSettings.colorBacking);
   root.setProperty('--sub-alpha-backing', (subSettings.alphaBacking / 100).toFixed(2));
   root.setProperty('--sub-font-size', `${subSettings.fontSize}px`);
@@ -1918,7 +2147,7 @@ function updateSubPreview() {
     `<span class="word" style="color:${s.colorBase}">les</span>`,
     `<span class="word" style="background:rgba(255,255,255,0.13);color:transparent;border-radius:6px;min-width:50px;position:relative;">
       <span style="color:${s.colorBase};opacity:0.5;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:0.7em;letter-spacing:2px;">____</span>paroles</span>`,
-    `<span class="word" style="color:${s.colorRevealed};background:rgba(0,184,148,0.25);">trouvé</span>`,
+    `<span class="word" style="color:${s.colorRevealed};background:${hexToRgba(s.bgRevealed, s.bgRevealedAlpha/100)};">trouvé</span>`,
     `<span class="word" style="color:${s.colorBacking};opacity:${s.alphaBacking/100};font-style:italic;">(chœurs)</span>`,
   ].join(' ');
 }
@@ -1929,6 +2158,8 @@ function resetSubSettings() {
   document.getElementById('subColorBase').value = subSettings.colorBase;
   document.getElementById('subColorHighlight').value = subSettings.colorHighlight;
   document.getElementById('subColorRevealed').value = subSettings.colorRevealed;
+  document.getElementById('subBgRevealed').value = subSettings.bgRevealed;
+  document.getElementById('subBgRevealedAlpha').value = subSettings.bgRevealedAlpha;
   document.getElementById('subColorBacking').value = subSettings.colorBacking;
   document.getElementById('subAlphaBacking').value = subSettings.alphaBacking;
   document.getElementById('subBgColor').value = subSettings.bgColor;
@@ -1951,6 +2182,8 @@ function loadSubSettings() {
       document.getElementById('subColorBase').value = subSettings.colorBase;
       document.getElementById('subColorHighlight').value = subSettings.colorHighlight;
       document.getElementById('subColorRevealed').value = subSettings.colorRevealed;
+      document.getElementById('subBgRevealed').value = subSettings.bgRevealed;
+      document.getElementById('subBgRevealedAlpha').value = subSettings.bgRevealedAlpha;
       document.getElementById('subColorBacking').value = subSettings.colorBacking;
       document.getElementById('subAlphaBacking').value = subSettings.alphaBacking;
       document.getElementById('subBgColor').value = subSettings.bgColor;
