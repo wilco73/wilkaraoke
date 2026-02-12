@@ -45,55 +45,117 @@
   .app {
     max-width: 100%;
     margin: 0 auto;
-    padding: 20px;
-  }
-
-  /* ---- Desktop layout: video+guess side by side ---- */
-  .main-stage {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-  }
-  .stage-left { flex: 1; min-width: 0; }
-  .stage-right {
-    width: 340px;
-    flex-shrink: 0;
+    padding: 10px 20px;
+    height: 100vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
+  }
+
+  /* ---- Top Bar ---- */
+  .top-bar-app {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    flex-shrink: 0;
+  }
+
+  .top-bar-left {
+    display: flex;
+    align-items: center;
     gap: 10px;
   }
 
-  @media (max-width: 1100px) {
+  .top-bar-center {
+    text-align: center;
+    flex: 1;
+  }
+
+  .top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .topbar-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .topbar-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+  .topbar-btn.accent {
+    background: linear-gradient(135deg, var(--accent), #e0a020);
+    color: #1a1a1a;
+    border-color: transparent;
+    font-weight: 800;
+  }
+
+  /* ---- Desktop layout: video+controls+guess ---- */
+  .main-stage {
+    display: flex;
+    gap: 14px;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .stage-left {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stage-right {
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  @media (max-width: 1000px) {
+    .app { height: auto; overflow: auto; }
     .main-stage { flex-direction: column; }
     .stage-right { width: 100%; }
+    .video-row { flex-direction: column; }
+    .video-controls-side { flex-direction: row; justify-content: center; width: 100%; }
+  }
+
+  /* Video + side controls row */
+  .video-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .video-controls-side {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .video-controls-side .btn {
+    padding: 10px 14px;
+    font-size: 0.8rem;
+    white-space: nowrap;
   }
 
   /* ---- Library Drawer ---- */
   .drawer-toggle {
-    position: fixed;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 900;
-    background: linear-gradient(135deg, var(--accent), #e0a020);
-    color: #1a1a1a;
-    border: none;
-    border-radius: 0 12px 12px 0;
-    padding: 14px 8px 14px 6px;
-    font-size: 1.1rem;
-    font-weight: 800;
-    cursor: pointer;
-    writing-mode: vertical-lr;
-    text-orientation: mixed;
-    letter-spacing: 2px;
-    box-shadow: 2px 0 12px rgba(0,0,0,0.3);
-    transition: left 0.3s;
-  }
-  .drawer-toggle:hover { padding-right: 12px; }
-  .drawer-open .drawer-toggle { left: 420px; }
-
-  @media (max-width: 600px) {
-    .drawer-open .drawer-toggle { left: calc(100vw - 40px); }
+    /* Now in the topbar, no fixed positioning */
   }
 
   .library-drawer {
@@ -101,7 +163,7 @@
     left: -440px;
     top: 0; bottom: 0;
     width: 420px;
-    max-width: calc(100vw - 40px);
+    max-width: calc(100vw - 20px);
     background: var(--bg-card);
     border-right: 1px solid #222244;
     z-index: 899;
@@ -111,6 +173,16 @@
     box-shadow: 4px 0 24px rgba(0,0,0,0.5);
   }
   .drawer-open .library-drawer { left: 0; }
+
+  /* Backdrop */
+  .drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 898;
+    display: none;
+  }
+  .drawer-open .drawer-backdrop { display: block; }
 
   .library-drawer .drawer-header {
     padding: 16px 20px;
@@ -139,6 +211,17 @@
     border-top: 1px solid #222244;
     flex-shrink: 0;
   }
+
+  .drawer-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .drawer-close-btn:hover { color: var(--text); background: rgba(255,255,255,0.1); }
 
   /* Pagination */
   .pagination {
@@ -170,35 +253,16 @@
     font-size: 0.75rem;
   }
 
-  /* ---- Help buttons bar ---- */
-  .help-buttons {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    margin: 12px 0;
-  }
-  .help-btn {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid #333;
-    border-radius: 10px;
-    padding: 8px 16px;
-    color: var(--text-dim);
-    font-size: 0.78rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .help-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
-
   /* ---- Header ---- */
   .header {
     text-align: center;
-    padding: 24px 0 16px;
+    padding: 0;
+    flex-shrink: 0;
   }
 
   .header h1 {
     font-family: 'Dela Gothic One', cursive;
-    font-size: 2rem;
+    font-size: 1.2rem;
     background: linear-gradient(135deg, var(--accent), var(--pink));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -208,20 +272,22 @@
 
   .header p {
     color: var(--text-dim);
-    margin-top: 4px;
-    font-size: 0.9rem;
+    margin-top: 0;
+    font-size: 0.72rem;
+    display: none; /* hide subtitle to save space */
   }
 
   /* ---- Video Stage ---- */
   .video-stage {
     position: relative;
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: hidden;
     background: #000;
-    aspect-ratio: 16 / 9;
-    margin: 20px 0 8px;
+    flex: 1;
+    min-height: 200px;
+    margin: 0;
     border: 2px solid #222244;
-    box-shadow: 0 0 40px rgba(0,0,0,0.5), 0 0 60px var(--accent-glow);
+    box-shadow: 0 0 20px rgba(0,0,0,0.4), 0 0 40px var(--accent-glow);
   }
 
   .video-stage video {
@@ -455,13 +521,13 @@
   /* ---- Guess Area ---- */
   .guess-area {
     background: var(--bg-card);
-    border-radius: 16px;
-    padding: 18px;
-    margin: 14px 0;
+    border-radius: 12px;
+    padding: 14px;
     border: 1px solid #222244;
     display: none;
   }
-  .guess-area.active { display: block; animation: slideUp 0.3s ease; }
+  .guess-area.visible { display: block; }
+  .guess-area.active { display: block; }
 
   @keyframes slideUp {
     from { opacity: 0; transform: translateY(10px); }
@@ -737,6 +803,62 @@
   }
   .modal-match-count strong { color: var(--accent); }
 
+  /* ---- Settings rows (subtitle modal) ---- */
+  .setting-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .setting-row label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    min-width: 140px;
+  }
+  .setting-row input[type="color"] {
+    width: 36px;
+    height: 30px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background: #1a1a2e;
+    cursor: pointer;
+    padding: 2px;
+  }
+  .setting-row input[type="range"] {
+    flex: 1;
+    max-width: 120px;
+    accent-color: var(--accent);
+  }
+  .setting-row .range-value {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    min-width: 36px;
+    text-align: right;
+  }
+  .subtitle-preview {
+    background: #111;
+    border-radius: 12px;
+    padding: 20px 16px;
+    margin-top: 14px;
+    text-align: center;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .subtitle-preview .preview-text {
+    font-size: 1.2rem;
+    font-weight: 800;
+    line-height: 1.6;
+  }
+  .subtitle-preview .preview-text .word {
+    display: inline-block;
+    margin: 0 3px;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+
   /* ---- Party HUD ---- */
   .party-hud {
     background: linear-gradient(135deg, rgba(108,92,231,0.15), rgba(162,155,254,0.08));
@@ -862,94 +984,7 @@
     color: var(--accent);
   }
 
-  /* ---- Subtitle Settings ---- */
-  .subtitle-settings {
-    background: var(--bg-card);
-    border-radius: 16px;
-    padding: 20px;
-    margin: 20px 0;
-    border: 1px solid #222244;
-  }
-
-  .subtitle-settings h3 {
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    margin-bottom: 14px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .subtitle-settings .settings-body { display: none; }
-  .subtitle-settings.open .settings-body { display: block; }
-
-  .setting-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
-  }
-
-  .setting-row label {
-    font-size: 0.82rem;
-    font-weight: 700;
-    color: var(--text-dim);
-    min-width: 160px;
-  }
-
-  .setting-row input[type="color"] {
-    width: 36px;
-    height: 30px;
-    border: 2px solid #333;
-    border-radius: 8px;
-    background: #1a1a2e;
-    cursor: pointer;
-    padding: 2px;
-  }
-
-  .setting-row input[type="range"] {
-    flex: 1;
-    max-width: 120px;
-    accent-color: var(--accent);
-  }
-
-  .setting-row .range-value {
-    font-size: 0.75rem;
-    color: var(--text-dim);
-    min-width: 36px;
-    text-align: right;
-  }
-
-  .subtitle-preview {
-    background: #111;
-    border-radius: 12px;
-    padding: 24px 20px;
-    margin-top: 14px;
-    text-align: center;
-    position: relative;
-    min-height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .subtitle-preview .preview-text {
-    font-size: 1.3rem;
-    font-weight: 800;
-    line-height: 1.6;
-  }
-
-  .subtitle-preview .preview-text .word {
-    display: inline-block;
-    margin: 0 3px;
-    padding: 2px 4px;
-    border-radius: 4px;
-  }
-
-  /* ---- Info Panel ---- */
+  /* ---- Info Panel (in modals now) ---- */
   .info-panel {
     background: var(--bg-card);
     border-radius: 16px;
@@ -1345,13 +1380,25 @@
 </div>
 
 <div class="app">
-  <div class="header">
-    <h1>🎤 N'oubliez pas les Paroles</h1>
-    <p>Karaoké interactif avec coupure de son</p>
-    <div class="room-badge" id="roomBadge" onclick="copyOverlayUrl()" title="Cliquer pour copier l'URL overlay">
-      Room : <span id="roomDisplay">—</span>
+  <!-- Top Bar -->
+  <div class="top-bar-app">
+    <div class="top-bar-left">
+      <button class="topbar-btn accent" onclick="toggleDrawer()">📚 Bibliothèque</button>
     </div>
-    <span id="copyMsg" style="color:var(--success);font-size:0.75rem;opacity:0;transition:opacity 0.3s;">✓ URL overlay copiée !</span>
+    <div class="top-bar-center">
+      <div class="header">
+        <h1>🎤 N'oubliez pas les Paroles</h1>
+      </div>
+    </div>
+    <div class="top-bar-right">
+      <div class="room-badge" id="roomBadge" onclick="copyOverlayUrl()" title="Copier URL overlay" style="font-size:0.72rem;padding:5px 10px;">
+        <span id="roomDisplay">—</span>
+      </div>
+      <span id="copyMsg" style="color:var(--success);font-size:0.65rem;opacity:0;transition:opacity 0.3s;">✓</span>
+      <button class="topbar-btn" onclick="document.getElementById('subtitleSettingsModal').classList.remove('hidden')">🎨</button>
+      <button class="topbar-btn" onclick="document.getElementById('obsModal').classList.remove('hidden')">📡</button>
+      <button class="topbar-btn" onclick="document.getElementById('guideModal').classList.remove('hidden')">📖</button>
+    </div>
   </div>
 
   <!-- Party HUD -->
@@ -1361,72 +1408,71 @@
     <button class="btn-sm" onclick="endParty()">✕ Arrêter</button>
   </div>
 
-  <!-- Main Stage: Video + Guess side by side on desktop -->
+  <!-- Main Stage -->
   <div class="main-stage">
     <div class="stage-left">
-      <!-- Video Stage -->
-      <div class="video-stage" id="videoStage">
-        <video id="videoPlayer" playsinline crossorigin="anonymous"></video>
+      <div class="video-row">
+        <!-- Video -->
+        <div class="video-stage" id="videoStage">
+          <video id="videoPlayer" playsinline crossorigin="anonymous"></video>
 
-        <div class="countdown-overlay hidden" id="countdownOverlay">
-          <div class="countdown-number" id="countdownNumber">5</div>
-          <div class="countdown-label" id="countdownLabel">Prochaine chanson...</div>
+          <div class="countdown-overlay hidden" id="countdownOverlay">
+            <div class="countdown-number" id="countdownNumber">5</div>
+            <div class="countdown-label" id="countdownLabel">Prochaine chanson...</div>
+          </div>
+
+          <div class="placeholder" id="placeholder">
+            <div class="icon">🎬</div>
+            <div class="msg">Sélectionnez une chanson</div>
+          </div>
+
+          <div class="score-display" style="display:none" id="scoreBox">
+            <div class="label">Score</div>
+            <div class="value" id="scoreValue">0</div>
+          </div>
+
+          <div class="status-bar">
+            <div class="status-pill paused" id="statusPill">⏸ En attente</div>
+          </div>
+
+          <div class="subtitle-overlay">
+            <div class="subtitle-text" id="subtitleText"></div>
+          </div>
         </div>
 
-        <div class="placeholder" id="placeholder">
-          <div class="icon">🎬</div>
-          <div class="msg">Sélectionnez une chanson pour commencer</div>
-        </div>
-
-        <div class="score-display" style="display:none" id="scoreBox">
-          <div class="label">Score</div>
-          <div class="value" id="scoreValue">0</div>
-        </div>
-
-        <div class="status-bar">
-          <div class="status-pill paused" id="statusPill">⏸ En attente</div>
-        </div>
-
-        <div class="subtitle-overlay">
-          <div class="subtitle-text" id="subtitleText"></div>
+        <!-- Side Controls -->
+        <div class="video-controls-side">
+          <button class="btn btn-primary" id="btnPlay" onclick="togglePlay()" disabled>▶ Jouer</button>
+          <button class="btn btn-success" id="btnReveal" onclick="revealNext()" disabled>👁 Révéler</button>
+          <button class="btn btn-secondary" onclick="resetGame()">↺ Reset</button>
         </div>
       </div>
 
       <!-- Progress -->
-      <div class="progress-container" id="progressContainer">
+      <div class="progress-container" id="progressContainer" style="margin-top:6px;">
         <div id="cutoffMarkers"></div>
         <div class="progress-bar" id="progressBar"></div>
       </div>
-      <div class="time-display">
+      <div class="time-display" style="font-size:0.72rem;">
         <span><span id="currentTime">0:00</span> / <span id="totalTime">0:00</span></span>
         <span id="cutoffInfo" style="color: var(--danger);"></span>
       </div>
 
-      <!-- Volume + Controls -->
-      <div class="volume-control">
+      <!-- Volume -->
+      <div class="volume-control" style="margin:4px 0;padding:6px 12px;">
         <span class="vol-icon" id="volIcon" onclick="toggleMuteManual()">🔊</span>
         <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80" oninput="setVolume(this.value)">
         <span class="volume-pct" id="volumePct">80%</span>
-      </div>
-
-      <div class="controls">
-        <button class="btn btn-primary" id="btnPlay" onclick="togglePlay()" disabled>▶ Jouer</button>
-        <button class="btn btn-success" id="btnReveal" onclick="revealNext()" disabled>👁 Révéler</button>
-        <button class="btn btn-secondary" onclick="resetGame()">↺ Reset</button>
-      </div>
-
-      <div class="sound-mode-option" id="soundModeOption">
-        <label class="sound-mode-label">
+        <label class="sound-mode-label" style="margin-left:12px;font-size:0.72rem;">
           <input type="checkbox" id="soundModeCheck" onchange="toggleSoundMode()">
-          <span class="checkmark"></span>
-          🔊 Rejouer le son après avoir trouvé tous les mots
+          🔊 Reprise auto
         </label>
       </div>
     </div>
 
     <div class="stage-right">
       <!-- Guess Area -->
-      <div class="guess-area" id="guessArea">
+      <div class="guess-area visible" id="guessArea">
         <h3>🎤 Devinez les paroles</h3>
         <div class="guess-input-row">
           <input type="text" class="guess-input" id="guessInput"
@@ -1435,7 +1481,7 @@
           <button class="btn btn-primary" onclick="checkGuess()">OK</button>
         </div>
         <div class="guess-feedback" id="guessFeedback"></div>
-        <div style="margin-top:8px;font-size:0.78rem;color:var(--text-dim)">
+        <div style="margin-top:6px;font-size:0.72rem;color:var(--text-dim)">
           💡 Tapez plusieurs mots ou une phrase. Appuyez sur ▶ pour continuer.
         </div>
       </div>
@@ -1450,89 +1496,23 @@
           <div class="wp-bar-fill" id="wpBarFill" style="width:0%"></div>
         </div>
         <div class="window-complete-msg" id="wpComplete">
-          ✅ Fenêtre complète ! Appuyez sur ▶ Reprendre pour continuer
+          ✅ Fenêtre complète !
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Help Buttons -->
-  <div class="help-buttons">
-    <button class="help-btn" onclick="document.getElementById('obsModal').classList.remove('hidden')">📡 Config OBS</button>
-    <button class="help-btn" onclick="document.getElementById('guideModal').classList.remove('hidden')">📖 Guide rapide</button>
-  </div>
-
-  <!-- Subtitle Settings -->
-  <div class="subtitle-settings" id="subtitleSettings">
-    <h3 onclick="this.parentElement.classList.toggle('open')">
-      🎨 Personnalisation des sous-titres
-      <span id="settingsToggle">▶</span>
-    </h3>
-    <div class="settings-body">
-
-      <div class="setting-row">
-        <label>Texte normal</label>
-        <input type="color" id="subColorBase" value="#f0f0f0" oninput="updateSubSettings()">
-      </div>
-
-      <div class="setting-row">
-        <label>Mot en surbrillance</label>
-        <input type="color" id="subColorHighlight" value="#f7b731" oninput="updateSubSettings()">
-      </div>
-
-      <div class="setting-row">
-        <label>Mot trouvé</label>
-        <input type="color" id="subColorRevealed" value="#00b894" oninput="updateSubSettings()">
-      </div>
-
-      <div class="setting-row">
-        <label>Fond mot trouvé</label>
-        <input type="color" id="subBgRevealed" value="#00b894" oninput="updateSubSettings()">
-        <input type="range" id="subBgRevealedAlpha" min="0" max="100" value="25" oninput="updateSubSettings()">
-        <span class="range-value" id="subBgRevealedAlphaVal">25%</span>
-      </div>
-
-      <div class="setting-row">
-        <label>Chœurs (parenthèses)</label>
-        <input type="color" id="subColorBacking" value="#8888aa" oninput="updateSubSettings()">
-        <input type="range" id="subAlphaBacking" min="10" max="100" value="60" oninput="updateSubSettings()">
-        <span class="range-value" id="subAlphaBackingVal">60%</span>
-      </div>
-
-      <div class="setting-row">
-        <label>Fond des sous-titres</label>
-        <input type="color" id="subBgColor" value="#000000" oninput="updateSubSettings()">
-        <input type="range" id="subBgAlpha" min="0" max="100" value="0" oninput="updateSubSettings()">
-        <span class="range-value" id="subBgAlphaVal">0%</span>
-      </div>
-
-      <div class="setting-row">
-        <label>Taille du texte</label>
-        <input type="range" id="subFontSize" min="12" max="40" value="24" oninput="updateSubSettings()">
-        <span class="range-value" id="subFontSizeVal">24px</span>
-      </div>
-
-      <div class="subtitle-preview" id="subtitlePreview">
-        <div class="preview-text" id="previewText"></div>
-      </div>
-
-      <div style="text-align:center;margin-top:10px;">
-        <button class="btn btn-secondary" onclick="resetSubSettings()" style="font-size:0.8rem;padding:6px 16px;">↺ Réinitialiser</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- Library Drawer -->
-<button class="drawer-toggle" id="drawerToggle" onclick="toggleDrawer()">📚</button>
-
+<div class="drawer-backdrop" onclick="toggleDrawer()"></div>
 <div class="library-drawer" id="libraryDrawer">
   <div class="drawer-header">
     <h3>📚 Bibliothèque</h3>
-    <div class="library-actions">
+    <div style="display:flex;align-items:center;gap:6px;">
       <button class="btn-sm party" onclick="openPartyModal()">🎮 Partie</button>
       <button class="btn-sm random" onclick="pickRandom()">🎲</button>
       <button class="btn-sm refresh" onclick="refreshLibrary()">↻</button>
+      <button class="drawer-close-btn" onclick="toggleDrawer()">✕</button>
     </div>
   </div>
   <div class="drawer-body">
@@ -1554,23 +1534,74 @@
   </div>
 </div>
 
+<!-- Subtitle Settings Modal -->
+<div class="modal-overlay hidden" id="subtitleSettingsModal">
+  <div class="modal-box">
+    <h2>🎨 Personnalisation des sous-titres</h2>
+
+    <div class="setting-row">
+      <label>Texte normal</label>
+      <input type="color" id="subColorBase" value="#f0f0f0" oninput="updateSubSettings()">
+    </div>
+    <div class="setting-row">
+      <label>Mot en surbrillance</label>
+      <input type="color" id="subColorHighlight" value="#f7b731" oninput="updateSubSettings()">
+    </div>
+    <div class="setting-row">
+      <label>Mot trouvé</label>
+      <input type="color" id="subColorRevealed" value="#00b894" oninput="updateSubSettings()">
+    </div>
+    <div class="setting-row">
+      <label>Fond mot trouvé</label>
+      <input type="color" id="subBgRevealed" value="#00b894" oninput="updateSubSettings()">
+      <input type="range" id="subBgRevealedAlpha" min="0" max="100" value="25" oninput="updateSubSettings()">
+      <span class="range-value" id="subBgRevealedAlphaVal">25%</span>
+    </div>
+    <div class="setting-row">
+      <label>Chœurs</label>
+      <input type="color" id="subColorBacking" value="#8888aa" oninput="updateSubSettings()">
+      <input type="range" id="subAlphaBacking" min="10" max="100" value="60" oninput="updateSubSettings()">
+      <span class="range-value" id="subAlphaBackingVal">60%</span>
+    </div>
+    <div class="setting-row">
+      <label>Fond sous-titres</label>
+      <input type="color" id="subBgColor" value="#000000" oninput="updateSubSettings()">
+      <input type="range" id="subBgAlpha" min="0" max="100" value="0" oninput="updateSubSettings()">
+      <span class="range-value" id="subBgAlphaVal">0%</span>
+    </div>
+    <div class="setting-row">
+      <label>Taille du texte</label>
+      <input type="range" id="subFontSize" min="12" max="40" value="24" oninput="updateSubSettings()">
+      <span class="range-value" id="subFontSizeVal">24px</span>
+    </div>
+
+    <div class="subtitle-preview" id="subtitlePreview">
+      <div class="preview-text" id="previewText"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="resetSubSettings()">↺ Réinitialiser</button>
+      <button class="btn btn-primary" onclick="document.getElementById('subtitleSettingsModal').classList.add('hidden')">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- OBS Modal -->
 <div class="modal-overlay hidden" id="obsModal">
   <div class="modal-box">
     <h2>📡 Configuration OBS</h2>
     <p style="margin-bottom:12px;">
-      Pour afficher dans OBS, ajoutez une <strong>Source Navigateur</strong> avec l'URL overlay
+      Ajoutez une <strong>Source Navigateur</strong> dans OBS avec l'URL overlay
       (cliquez sur le badge room pour copier).
     </p>
     <p>
-      <kbd id="overlayUrl" style="cursor:pointer;display:inline-block;padding:6px 12px;font-size:0.85rem;" onclick="copyOverlayUrl()" title="Cliquer pour copier">
+      <kbd id="overlayUrl" style="cursor:pointer;display:inline-block;padding:6px 12px;font-size:0.85rem;" onclick="copyOverlayUrl()" title="Copier">
         chargement...
       </kbd>
     </p>
     <p style="margin-top:12px;">
-      L'overlay est transparent, sans contrôles — juste la vidéo, les sous-titres et le score.
-      Taille recommandée : <kbd>1280×720</kbd>.
-      Votre URL overlay est <strong>permanente</strong> tant que vous gardez le même nom de room.
+      L'overlay est transparent. Taille recommandée : <kbd>1280×720</kbd>.
+      URL permanente tant que vous gardez le même nom de room.
     </p>
     <div class="modal-actions" style="margin-top:16px;">
       <button class="btn btn-secondary" onclick="document.getElementById('obsModal').classList.add('hidden')">Fermer</button>
@@ -1583,23 +1614,20 @@
   <div class="modal-box">
     <h2>📖 Guide rapide</h2>
     <p>
-      Placez vos chansons dans le dossier <kbd>videos/</kbd> à côté de <kbd>server.py</kbd>.
-      Chaque chanson doit avoir son propre sous-dossier avec un fichier <kbd>.srt</kbd>.
-      Ajoutez un <kbd>config.json</kbd> pour personnaliser titre, artiste, difficulté, tags et coupure.
+      Placez vos chansons dans <kbd>videos/</kbd>. Chaque sous-dossier = 1 chanson avec un <kbd>.srt</kbd>.
+      Ajoutez <kbd>config.json</kbd> pour titre, artiste, difficulté, tags et coupure.
     </p>
     <p style="margin-top:10px;">
-      Pour générer les sous-titres avec Whisper :<br>
-      <kbd>whisper video.mp4 --language fr --output_format srt</kbd>
+      Whisper : <kbd>whisper video.mp4 --language fr --output_format srt</kbd>
     </p>
     <p style="margin-top:10px;">
-      <strong>Calage des paroles :</strong> ajoutez <kbd>"subtitle_offset"</kbd> dans config.json.
-      <kbd>-0.3</kbd> = avance 300ms, <kbd>0.5</kbd> = retarde 500ms.
+      <strong>Calage :</strong> <kbd>"subtitle_offset": -0.3</kbd> (avance 300ms)
     </p>
     <p style="margin-top:10px;">
-      <strong>Tags :</strong> <kbd>"tags": ["pop", "français", "duos"]</kbd> — utilisables dans les filtres de partie et la recherche.
+      <strong>Tags :</strong> <kbd>"tags": ["pop", "français"]</kbd>
     </p>
     <p style="margin-top:10px;">
-      <strong>Chœurs :</strong> Mettez les paroles du chœur entre parenthèses dans le SRT — elles seront affichées mais pas à deviner.
+      <strong>Chœurs :</strong> Parenthèses dans le SRT → affichés mais pas à deviner.
     </p>
     <div class="modal-actions" style="margin-top:16px;">
       <button class="btn btn-secondary" onclick="document.getElementById('guideModal').classList.add('hidden')">Fermer</button>
@@ -2199,13 +2227,7 @@ function loadSubSettings() {
   }
 }
 
-// Toggle arrow for settings panel
-document.getElementById('subtitleSettings').addEventListener('click', function(e) {
-  if (e.target.tagName === 'H3' || e.target.id === 'settingsToggle') {
-    document.getElementById('settingsToggle').textContent =
-      this.classList.contains('open') ? '▶' : '▼';
-  }
-});
+// (subtitle settings now in modal)
 
 function updateRevealButton() {
   const btn = document.getElementById('btnReveal');
@@ -2560,6 +2582,7 @@ function resetGame() {
   updateStatus('paused');
 
   if (currentSong) {
+    document.getElementById('guessArea').classList.add('visible');
     renderCutoffMarkers();
     document.getElementById('subtitleText').innerHTML =
       `<span class="word" style="color: var(--accent);">♪ ${currentSong.title} — ${currentSong.artist} ♪</span>`;
