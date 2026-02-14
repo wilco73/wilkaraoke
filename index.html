@@ -1398,6 +1398,7 @@
       <button class="topbar-btn" onclick="document.getElementById('subtitleSettingsModal').classList.remove('hidden')" title="Personnaliser les couleurs et la taille des sous-titres">🎨</button>
       <button class="topbar-btn" onclick="document.getElementById('obsModal').classList.remove('hidden')" title="Configurer l'overlay pour OBS (streaming)">📡</button>
       <button class="topbar-btn" onclick="document.getElementById('guideModal').classList.remove('hidden')" title="Guide rapide et tutoriel des boutons">📖</button>
+      <button class="topbar-btn" id="btnChangelog" onclick="showChangelog()" title="Voir les dernières chansons ajoutées">🆕</button>
     </div>
   </div>
 
@@ -1619,6 +1620,7 @@
     <p style="margin-top:6px;"><strong>🎨 Sous-titres</strong> — Personnalisez les couleurs du texte, des mots trouvés, des chœurs, la taille de police et le fond. Les changements s'appliquent aussi à l'overlay OBS.</p>
     <p style="margin-top:6px;"><strong>📡 OBS</strong> — Affiche l'URL de votre overlay à ajouter comme Source Navigateur dans OBS pour le streaming.</p>
     <p style="margin-top:6px;"><strong>📖 Guide</strong> — Vous êtes ici !</p>
+    <p style="margin-top:6px;"><strong>🆕 Nouveautés</strong> — Affiche les dernières chansons ajoutées. Un point rouge apparaît quand il y a du nouveau depuis votre dernière visite.</p>
     <p style="margin-top:6px;"><strong>Badge Room</strong> — Cliquez dessus pour copier l'URL overlay dans le presse-papier.</p>
 
     <h3 style="font-size:0.85rem;color:var(--accent);margin:14px 0 8px;">🎬 Contrôles vidéo</h3>
@@ -1661,6 +1663,126 @@
     </div>
   </div>
 </div>
+
+<!-- Changelog Modal -->
+<div class="modal-overlay hidden" id="changelogModal">
+  <div class="modal-box" style="max-width:520px;">
+    <h2>🆕 Nouveautés</h2>
+    <div id="changelogContent" style="max-height:60vh;overflow-y:auto;">
+      <p style="color:var(--text-dim);text-align:center;">Chargement...</p>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-primary" onclick="dismissChangelog()" title="Fermer et marquer comme lu">OK, compris !</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Changelog styles */
+  #changelogContent {
+    max-height: 55vh;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  #changelogContent::-webkit-scrollbar { width: 5px; }
+  #changelogContent::-webkit-scrollbar-track { background: transparent; }
+  #changelogContent::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+  .changelog-section {
+    margin-bottom: 6px;
+    border: 1px solid #222244;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .changelog-date {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+    user-select: none;
+  }
+  .changelog-date:hover { background: rgba(255,255,255,0.06); }
+  .changelog-date::after {
+    content: '▼';
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    transition: transform 0.2s;
+  }
+  .changelog-section.collapsed .changelog-date::after {
+    transform: rotate(-90deg);
+  }
+
+  .changelog-songs {
+    padding: 4px 14px 10px;
+  }
+  .changelog-section.collapsed .changelog-songs {
+    display: none;
+  }
+
+  .changelog-song {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .changelog-song:last-child { border-bottom: none; }
+
+  .changelog-song .song-title {
+    font-weight: 800;
+    font-size: 0.85rem;
+  }
+  .changelog-song .song-artist {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+  .changelog-song .song-diff {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .changelog-song .song-diff.easy { background: rgba(0,184,148,0.15); color: var(--success); }
+  .changelog-song .song-diff.medium { background: rgba(247,183,49,0.15); color: var(--accent); }
+  .changelog-song .song-diff.hard { background: rgba(214,48,49,0.15); color: var(--danger); }
+
+  .changelog-summary {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    padding: 8px 0 4px;
+  }
+  .changelog-summary strong { color: var(--text); }
+
+  .topbar-btn.has-new {
+    position: relative;
+    animation: glowNew 2s ease infinite;
+  }
+  .topbar-btn.has-new::after {
+    content: '';
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 8px; height: 8px;
+    background: var(--danger);
+    border-radius: 50%;
+    border: 2px solid var(--bg-dark);
+  }
+  @keyframes glowNew {
+    0%,100% { box-shadow: none; }
+    50% { box-shadow: 0 0 8px rgba(214,48,49,0.5); }
+  }
+</style>
 
 <script>
 // ============================================================
@@ -2255,6 +2377,104 @@ function loadSubSettings() {
 }
 
 // (subtitle settings now in modal)
+
+// ============================================================
+// CHANGELOG — "What's new" popup
+// ============================================================
+let changelogHash = null;
+
+async function simpleHash(str) {
+  const data = new TextEncoder().encode(str);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('').slice(0, 16);
+}
+
+async function loadChangelog() {
+  try {
+    const res = await fetch(`${API}/changelog.html?_=${Date.now()}`);
+    if (!res.ok) {
+      document.getElementById('btnChangelog').style.display = 'none';
+      return;
+    }
+    const html = await res.text();
+    if (!html.trim()) {
+      document.getElementById('btnChangelog').style.display = 'none';
+      return;
+    }
+
+    changelogHash = await simpleHash(html);
+
+    // Parse and enhance the HTML
+    const container = document.getElementById('changelogContent');
+    container.innerHTML = html;
+
+    // Add accordion toggle to date headers
+    const sections = container.querySelectorAll('.changelog-section');
+    let totalSongs = 0;
+
+    sections.forEach((section, i) => {
+      const dateEl = section.querySelector('.changelog-date');
+      const songCount = section.querySelectorAll('.changelog-song').length;
+      totalSongs += songCount;
+
+      // Wrap songs in a container if not already
+      const songs = section.querySelectorAll('.changelog-song');
+      let songsContainer = section.querySelector('.changelog-songs');
+      if (!songsContainer) {
+        songsContainer = document.createElement('div');
+        songsContainer.className = 'changelog-songs';
+        songs.forEach(s => songsContainer.appendChild(s));
+        section.appendChild(songsContainer);
+      }
+
+      // Add song count to date
+      if (dateEl && songCount > 0) {
+        dateEl.innerHTML = dateEl.textContent + ` <span style="font-size:0.6rem;opacity:0.6;">(${songCount})</span>`;
+      }
+
+      // Collapse all except the first section
+      if (i > 0) section.classList.add('collapsed');
+
+      // Toggle on click
+      if (dateEl) {
+        dateEl.addEventListener('click', () => {
+          section.classList.toggle('collapsed');
+        });
+      }
+    });
+
+    // Add summary at the top
+    if (sections.length > 0) {
+      const summary = document.createElement('div');
+      summary.className = 'changelog-summary';
+      summary.innerHTML = `<strong>${totalSongs}</strong> chanson${totalSongs > 1 ? 's' : ''} sur <strong>${sections.length}</strong> mise${sections.length > 1 ? 's' : ''} à jour`;
+      container.insertBefore(summary, container.firstChild);
+    }
+
+    // Check if user has seen this version
+    let seenHash = null;
+    try { seenHash = localStorage.getItem('karaoke_changelog_seen'); } catch(e) {}
+
+    if (seenHash !== changelogHash) {
+      document.getElementById('btnChangelog').classList.add('has-new');
+      document.getElementById('changelogModal').classList.remove('hidden');
+    }
+  } catch(e) {
+    document.getElementById('btnChangelog').style.display = 'none';
+  }
+}
+
+function showChangelog() {
+  document.getElementById('changelogModal').classList.remove('hidden');
+}
+
+function dismissChangelog() {
+  document.getElementById('changelogModal').classList.add('hidden');
+  document.getElementById('btnChangelog').classList.remove('has-new');
+  if (changelogHash) {
+    try { localStorage.setItem('karaoke_changelog_seen', changelogHash); } catch(e) {}
+  }
+}
 
 function updateRevealButton() {
   const btn = document.getElementById('btnReveal');
@@ -3134,6 +3354,9 @@ async function init() {
 
   // Load subtitle settings
   loadSubSettings();
+
+  // Load changelog (what's new)
+  loadChangelog();
 
   if (urlRoom) {
     enterRoom(urlRoom);

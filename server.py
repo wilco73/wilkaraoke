@@ -481,6 +481,11 @@ class GameHandler(http.server.BaseHTTPRequestHandler):
             self.serve_frontend("overlay.html")
             return
 
+        # --- Changelog ---
+        if path == "/changelog.html":
+            self.serve_frontend("changelog.html")
+            return
+
         self.send_error(404)
 
     def do_OPTIONS(self):
